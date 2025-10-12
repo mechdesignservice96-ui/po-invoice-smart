@@ -73,10 +73,186 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return parsed;
       });
 
-    setVendors(parseDates(loadedVendors, ['createdAt']));
-    setPurchaseOrders(parseDates(loadedPOs, ['poDate', 'dueDate', 'createdAt']));
-    setInvoices(parseDates(loadedInvoices, ['invoiceDate', 'dueDate', 'createdAt']));
-    setPayments(parseDates(loadedPayments, ['paymentDate', 'createdAt']));
+    // Initialize with dummy data if empty
+    if (loadedVendors.length === 0) {
+      const dummyVendors: Vendor[] = [
+        {
+          id: 'V1',
+          name: 'Tech Solutions Ltd',
+          contactPerson: 'John Smith',
+          email: 'john@techsolutions.com',
+          phone: '+1-555-0101',
+          taxId: 'TAX-001',
+          paymentTerms: 30,
+          createdAt: new Date('2024-01-15'),
+        },
+        {
+          id: 'V2',
+          name: 'Office Supplies Co',
+          contactPerson: 'Sarah Johnson',
+          email: 'sarah@officesupplies.com',
+          phone: '+1-555-0102',
+          taxId: 'TAX-002',
+          paymentTerms: 15,
+          createdAt: new Date('2024-02-01'),
+        },
+        {
+          id: 'V3',
+          name: 'Cloud Services Inc',
+          contactPerson: 'Michael Chen',
+          email: 'michael@cloudservices.com',
+          phone: '+1-555-0103',
+          taxId: 'TAX-003',
+          paymentTerms: 30,
+          createdAt: new Date('2024-03-10'),
+        },
+      ];
+      localStorage.setItem(STORAGE_KEYS.VENDORS, JSON.stringify(dummyVendors));
+      setVendors(dummyVendors);
+
+      const dummyPOs: PurchaseOrder[] = [
+        {
+          id: 'PO1',
+          poNumber: 'PO-2025-001',
+          vendorId: 'V1',
+          vendorName: 'Tech Solutions Ltd',
+          poDate: new Date('2025-01-05'),
+          dueDate: new Date('2025-02-05'),
+          totalAmount: 15000,
+          advancePaid: 5000,
+          balanceAmount: 10000,
+          status: 'Ordered',
+          notes: 'Annual software license renewal',
+          createdAt: new Date('2025-01-05'),
+        },
+        {
+          id: 'PO2',
+          poNumber: 'PO-2025-002',
+          vendorId: 'V2',
+          vendorName: 'Office Supplies Co',
+          poDate: new Date('2025-01-10'),
+          dueDate: new Date('2025-01-25'),
+          totalAmount: 3500,
+          advancePaid: 0,
+          balanceAmount: 3500,
+          status: 'Received',
+          notes: 'Office furniture and supplies',
+          createdAt: new Date('2025-01-10'),
+        },
+        {
+          id: 'PO3',
+          poNumber: 'PO-2025-003',
+          vendorId: 'V3',
+          vendorName: 'Cloud Services Inc',
+          poDate: new Date('2024-12-20'),
+          dueDate: new Date('2025-01-01'),
+          totalAmount: 8000,
+          advancePaid: 8000,
+          balanceAmount: 0,
+          status: 'Paid',
+          notes: 'Cloud hosting services Q1',
+          createdAt: new Date('2024-12-20'),
+        },
+      ];
+      localStorage.setItem(STORAGE_KEYS.POS, JSON.stringify(dummyPOs));
+      setPurchaseOrders(dummyPOs);
+
+      const dummyInvoices: Invoice[] = [
+        {
+          id: 'INV1',
+          invoiceNumber: 'INV-2025-001',
+          poId: 'PO1',
+          poNumber: 'PO-2025-001',
+          vendorId: 'V1',
+          vendorName: 'Tech Solutions Ltd',
+          invoiceDate: new Date('2025-01-15'),
+          dueDate: new Date('2025-02-15'),
+          subtotal: 13636.36,
+          taxPercent: 10,
+          taxAmount: 1363.64,
+          totalAmount: 15000,
+          paidAmount: 5000,
+          balanceAmount: 10000,
+          status: 'Partial',
+          daysDelayed: 0,
+          createdAt: new Date('2025-01-15'),
+        },
+        {
+          id: 'INV2',
+          invoiceNumber: 'INV-2025-002',
+          poId: 'PO2',
+          poNumber: 'PO-2025-002',
+          vendorId: 'V2',
+          vendorName: 'Office Supplies Co',
+          invoiceDate: new Date('2025-01-12'),
+          dueDate: new Date('2025-01-05'),
+          subtotal: 3181.82,
+          taxPercent: 10,
+          taxAmount: 318.18,
+          totalAmount: 3500,
+          paidAmount: 0,
+          balanceAmount: 3500,
+          status: 'Overdue',
+          daysDelayed: 7,
+          createdAt: new Date('2025-01-12'),
+        },
+        {
+          id: 'INV3',
+          invoiceNumber: 'INV-2025-003',
+          poId: 'PO3',
+          poNumber: 'PO-2025-003',
+          vendorId: 'V3',
+          vendorName: 'Cloud Services Inc',
+          invoiceDate: new Date('2024-12-28'),
+          dueDate: new Date('2025-01-28'),
+          subtotal: 7272.73,
+          taxPercent: 10,
+          taxAmount: 727.27,
+          totalAmount: 8000,
+          paidAmount: 8000,
+          balanceAmount: 0,
+          status: 'Paid',
+          daysDelayed: 0,
+          createdAt: new Date('2024-12-28'),
+        },
+      ];
+      localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(dummyInvoices));
+      setInvoices(dummyInvoices);
+
+      const dummyPayments: Payment[] = [
+        {
+          id: 'PAY1',
+          invoiceId: 'INV1',
+          invoiceNumber: 'INV-2025-001',
+          vendorName: 'Tech Solutions Ltd',
+          paymentDate: new Date('2025-01-20'),
+          amount: 5000,
+          method: 'Bank Transfer',
+          referenceNumber: 'TXN-001',
+          remarks: 'Advance payment',
+          createdAt: new Date('2025-01-20'),
+        },
+        {
+          id: 'PAY2',
+          invoiceId: 'INV3',
+          invoiceNumber: 'INV-2025-003',
+          vendorName: 'Cloud Services Inc',
+          paymentDate: new Date('2025-01-05'),
+          amount: 8000,
+          method: 'Check',
+          referenceNumber: 'CHK-5001',
+          remarks: 'Full payment',
+          createdAt: new Date('2025-01-05'),
+        },
+      ];
+      localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(dummyPayments));
+      setPayments(dummyPayments);
+    } else {
+      setVendors(parseDates(loadedVendors, ['createdAt']));
+      setPurchaseOrders(parseDates(loadedPOs, ['poDate', 'dueDate', 'createdAt']));
+      setInvoices(parseDates(loadedInvoices, ['invoiceDate', 'dueDate', 'createdAt']));
+      setPayments(parseDates(loadedPayments, ['paymentDate', 'createdAt']));
+    }
   }, []);
 
   // Save to localStorage whenever data changes
