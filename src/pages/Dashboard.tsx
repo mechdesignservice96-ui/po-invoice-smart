@@ -37,7 +37,7 @@ const Dashboard = () => {
 
       const paidAmount = invoices
         .filter(inv => new Date(inv.invoiceDate).toLocaleString('default', { month: 'short' }) === month)
-        .reduce((sum, inv) => sum + inv.paidAmount, 0);
+        .reduce((sum, inv) => sum + inv.amountReceived, 0);
 
       return {
         month,
@@ -157,7 +157,7 @@ const Dashboard = () => {
                         {invoice.daysDelayed} days overdue
                       </span>
                       <span className="font-bold text-destructive">
-                        {formatCurrency(invoice.balanceAmount)}
+                        {formatCurrency(invoice.pendingAmount)}
                       </span>
                     </div>
                   </div>

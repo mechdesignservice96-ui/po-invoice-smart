@@ -58,7 +58,7 @@ const Payments = () => {
     setIsDialogOpen(false);
   };
 
-  const unpaidInvoices = invoices.filter(inv => inv.balanceAmount > 0);
+  const unpaidInvoices = invoices.filter(inv => inv.pendingAmount > 0);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -89,7 +89,7 @@ const Payments = () => {
                   <SelectContent>
                     {unpaidInvoices.map(invoice => (
                       <SelectItem key={invoice.id} value={invoice.id}>
-                        {invoice.invoiceNumber} - {invoice.vendorName} (Balance: {formatCurrency(invoice.balanceAmount)})
+                        {invoice.invoiceNumber} - {invoice.vendorName} (Balance: {formatCurrency(invoice.pendingAmount)})
                       </SelectItem>
                     ))}
                   </SelectContent>

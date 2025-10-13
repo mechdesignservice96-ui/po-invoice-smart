@@ -43,8 +43,8 @@ const calculateDaysDelayed = (dueDate: Date): number => {
 
 // Helper function to determine invoice status
 const determineInvoiceStatus = (invoice: Invoice): Invoice['status'] => {
-  if (invoice.paidAmount >= invoice.totalAmount) return 'Paid';
-  if (invoice.paidAmount > 0) return 'Partial';
+  if (invoice.amountReceived >= invoice.totalCost) return 'Paid';
+  if (invoice.amountReceived > 0) return 'Partial';
   const daysDelayed = calculateDaysDelayed(invoice.dueDate);
   if (daysDelayed > 0) return 'Overdue';
   return 'Unpaid';
@@ -161,58 +161,73 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         {
           id: 'INV1',
           invoiceNumber: 'INV-2025-001',
-          poId: 'PO1',
-          poNumber: 'PO-2025-001',
+          invoiceDate: new Date('2025-01-15'),
           vendorId: 'V1',
           vendorName: 'Tech Solutions Ltd',
-          invoiceDate: new Date('2025-01-15'),
-          dueDate: new Date('2025-02-15'),
-          subtotal: 13636.36,
-          taxPercent: 10,
-          taxAmount: 1363.64,
-          totalAmount: 15000,
-          paidAmount: 5000,
-          balanceAmount: 10000,
+          particulars: 'Annual software license renewal - Enterprise Plan',
+          poQty: 100,
+          qtyDispatched: 60,
+          balanceQty: 40,
+          basicAmount: 13636.36,
+          gstPercent: 10,
+          gstAmount: 1363.64,
+          transportationCost: 0,
+          totalCost: 15000,
+          amountReceived: 5000,
+          pendingAmount: 10000,
           status: 'Partial',
+          dueDate: new Date('2025-02-15'),
           daysDelayed: 0,
+          poId: 'PO1',
+          poNumber: 'PO-2025-001',
           createdAt: new Date('2025-01-15'),
         },
         {
           id: 'INV2',
           invoiceNumber: 'INV-2025-002',
-          poId: 'PO2',
-          poNumber: 'PO-2025-002',
+          invoiceDate: new Date('2025-01-12'),
           vendorId: 'V2',
           vendorName: 'Office Supplies Co',
-          invoiceDate: new Date('2025-01-12'),
-          dueDate: new Date('2025-01-05'),
-          subtotal: 3181.82,
-          taxPercent: 10,
-          taxAmount: 318.18,
-          totalAmount: 3500,
-          paidAmount: 0,
-          balanceAmount: 3500,
+          particulars: 'Office furniture and supplies - Desks, Chairs, Filing Cabinets',
+          poQty: 50,
+          qtyDispatched: 50,
+          balanceQty: 0,
+          basicAmount: 3181.82,
+          gstPercent: 10,
+          gstAmount: 318.18,
+          transportationCost: 0,
+          totalCost: 3500,
+          amountReceived: 0,
+          pendingAmount: 3500,
           status: 'Overdue',
+          dueDate: new Date('2025-01-05'),
           daysDelayed: 7,
+          poId: 'PO2',
+          poNumber: 'PO-2025-002',
           createdAt: new Date('2025-01-12'),
         },
         {
           id: 'INV3',
           invoiceNumber: 'INV-2025-003',
-          poId: 'PO3',
-          poNumber: 'PO-2025-003',
+          invoiceDate: new Date('2024-12-28'),
           vendorId: 'V3',
           vendorName: 'Cloud Services Inc',
-          invoiceDate: new Date('2024-12-28'),
-          dueDate: new Date('2025-01-28'),
-          subtotal: 7272.73,
-          taxPercent: 10,
-          taxAmount: 727.27,
-          totalAmount: 8000,
-          paidAmount: 8000,
-          balanceAmount: 0,
+          particulars: 'Cloud hosting services Q1 - AWS Infrastructure',
+          poQty: 1,
+          qtyDispatched: 1,
+          balanceQty: 0,
+          basicAmount: 7272.73,
+          gstPercent: 10,
+          gstAmount: 727.27,
+          transportationCost: 0,
+          totalCost: 8000,
+          amountReceived: 8000,
+          pendingAmount: 0,
           status: 'Paid',
+          dueDate: new Date('2025-01-28'),
           daysDelayed: 0,
+          poId: 'PO3',
+          poNumber: 'PO-2025-003',
           createdAt: new Date('2024-12-28'),
         },
       ];
@@ -275,13 +290,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Calculate dashboard stats
   const dashboardStats: DashboardStats = {
     totalPOValue: purchaseOrders.reduce((sum, po) => sum + po.totalAmount, 0),
-    totalInvoiced: invoices.reduce((sum, inv) => sum + inv.totalAmount, 0),
-    totalPaid: invoices.reduce((sum, inv) => sum + inv.paidAmount, 0),
-    totalOutstanding: invoices.reduce((sum, inv) => sum + inv.balanceAmount, 0),
+    totalInvoiced: invoices.reduce((sum, inv) => sum + inv.totalCost, 0),
+    totalPaid: invoices.reduce((sum, inv) => sum + inv.amountReceived, 0),
+    totalOutstanding: invoices.reduce((sum, inv) => sum + inv.pendingAmount, 0),
     overdueCount: invoices.filter(inv => inv.status === 'Overdue').length,
     overdueAmount: invoices
       .filter(inv => inv.status === 'Overdue')
-      .reduce((sum, inv) => sum + inv.balanceAmount, 0),
+      .reduce((sum, inv) => sum + inv.pendingAmount, 0),
   };
 
   const addVendor = (vendor: Omit<Vendor, 'id' | 'createdAt'>) => {
@@ -373,11 +388,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Update the related invoice
     const invoice = invoices.find(inv => inv.id === payment.invoiceId);
     if (invoice) {
-      const newPaidAmount = invoice.paidAmount + payment.amount;
-      const newBalanceAmount = invoice.totalAmount - newPaidAmount;
+      const newAmountReceived = invoice.amountReceived + payment.amount;
+      const newPendingAmount = invoice.totalCost - newAmountReceived;
       updateInvoice(invoice.id, {
-        paidAmount: newPaidAmount,
-        balanceAmount: newBalanceAmount,
+        amountReceived: newAmountReceived,
+        pendingAmount: newPendingAmount,
       });
     }
 
@@ -390,11 +405,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // Update the related invoice
       const invoice = invoices.find(inv => inv.id === payment.invoiceId);
       if (invoice) {
-        const newPaidAmount = invoice.paidAmount - payment.amount;
-        const newBalanceAmount = invoice.totalAmount - newPaidAmount;
+        const newAmountReceived = invoice.amountReceived - payment.amount;
+        const newPendingAmount = invoice.totalCost - newAmountReceived;
         updateInvoice(invoice.id, {
-          paidAmount: newPaidAmount,
-          balanceAmount: newBalanceAmount,
+          amountReceived: newAmountReceived,
+          pendingAmount: newPendingAmount,
         });
       }
     }

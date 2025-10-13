@@ -31,20 +31,25 @@ export interface PurchaseOrder {
 export interface Invoice {
   id: string;
   invoiceNumber: string;
-  poId?: string;
-  poNumber?: string;
+  invoiceDate: Date;
   vendorId: string;
   vendorName: string;
-  invoiceDate: Date;
-  dueDate: Date;
-  subtotal: number;
-  taxPercent: number;
-  taxAmount: number;
-  totalAmount: number;
-  paidAmount: number;
-  balanceAmount: number;
+  particulars: string;
+  poQty: number;
+  qtyDispatched: number;
+  balanceQty: number; // auto: poQty - qtyDispatched
+  basicAmount: number;
+  gstPercent: number;
+  gstAmount: number; // auto: basicAmount * gstPercent / 100
+  transportationCost: number;
+  totalCost: number; // auto: basicAmount + gstAmount + transportationCost
+  amountReceived: number;
+  pendingAmount: number; // auto: totalCost - amountReceived
   status: InvoiceStatus;
-  daysDelayed?: number;
+  dueDate: Date;
+  daysDelayed?: number; // auto: today - dueDate (if overdue)
+  poId?: string;
+  poNumber?: string;
   createdAt: Date;
 }
 
