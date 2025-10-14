@@ -34,6 +34,8 @@ export interface Invoice {
   invoiceDate: Date;
   vendorId: string;
   vendorName: string;
+  poNumber?: string;
+  poDate?: Date;
   particulars: string;
   poQty: number;
   qtyDispatched: number;
@@ -49,7 +51,6 @@ export interface Invoice {
   dueDate: Date;
   daysDelayed?: number; // auto: today - dueDate (if overdue)
   poId?: string;
-  poNumber?: string;
   createdAt: Date;
 }
 

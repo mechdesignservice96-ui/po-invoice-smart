@@ -87,6 +87,8 @@ const Invoices = () => {
       'Invoice Date': formatDate(inv.invoiceDate),
       'Vendor ID': inv.vendorId,
       'Vendor Name': inv.vendorName,
+      'PO Number': inv.poNumber || '',
+      'PO Date': inv.poDate ? formatDate(inv.poDate) : '',
       'Particulars': inv.particulars,
       'PO Qty': inv.poQty,
       'Qty Dispatched': inv.qtyDispatched,
@@ -108,9 +110,9 @@ const Invoices = () => {
     // Set column widths
     const colWidths = [
       { wch: 8 }, { wch: 15 }, { wch: 12 }, { wch: 10 }, { wch: 20 },
-      { wch: 30 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 15 },
-      { wch: 8 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
-      { wch: 15 }, { wch: 10 }, { wch: 12 }, { wch: 12 }
+      { wch: 15 }, { wch: 12 }, { wch: 30 }, { wch: 10 }, { wch: 12 },
+      { wch: 12 }, { wch: 15 }, { wch: 8 }, { wch: 12 }, { wch: 15 },
+      { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 12 }, { wch: 12 }
     ];
     worksheet['!cols'] = colWidths;
 
@@ -250,6 +252,8 @@ const Invoices = () => {
                   <TableHead className="font-semibold">Date</TableHead>
                   <TableHead className="font-semibold">Vendor ID</TableHead>
                   <TableHead className="font-semibold">Vendor Name</TableHead>
+                  <TableHead className="font-semibold">PO Number</TableHead>
+                  <TableHead className="font-semibold">PO Date</TableHead>
                   <TableHead className="font-semibold">Particulars</TableHead>
                   <TableHead className="font-semibold text-right">PO Qty</TableHead>
                   <TableHead className="font-semibold text-right">Dispatched</TableHead>
@@ -269,7 +273,7 @@ const Invoices = () => {
               <TableBody>
                 {filteredInvoices.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={19} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={21} className="text-center py-8 text-muted-foreground">
                       No invoices found. Create your first invoice to get started.
                     </TableCell>
                   </TableRow>
@@ -283,6 +287,10 @@ const Invoices = () => {
                       <TableCell className="text-muted-foreground">{formatDate(inv.invoiceDate)}</TableCell>
                       <TableCell>{inv.vendorId}</TableCell>
                       <TableCell>{inv.vendorName}</TableCell>
+                      <TableCell className="text-muted-foreground">{inv.poNumber || '—'}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {inv.poDate ? formatDate(inv.poDate) : '—'}
+                      </TableCell>
                       <TableCell className="max-w-[200px] truncate">
                         <TooltipProvider>
                           <Tooltip>

@@ -17,6 +17,8 @@ const invoiceSchema = z.object({
   invoiceNumber: z.string().min(1, 'Invoice number is required'),
   invoiceDate: z.string().min(1, 'Invoice date is required'),
   vendorId: z.string().min(1, 'Vendor is required'),
+  poNumber: z.string().optional(),
+  poDate: z.string().optional(),
   particulars: z.string().min(1, 'Particulars are required'),
   poQty: z.number().min(0, 'PO quantity must be positive'),
   qtyDispatched: z.number().min(0, 'Dispatched quantity must be positive'),
@@ -61,6 +63,8 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
       invoiceNumber: '',
       invoiceDate: new Date().toISOString().split('T')[0],
       vendorId: '',
+      poNumber: '',
+      poDate: '',
       particulars: '',
       poQty: 0,
       qtyDispatched: 0,
@@ -79,6 +83,8 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
       setValue('invoiceNumber', invoice.invoiceNumber);
       setValue('invoiceDate', new Date(invoice.invoiceDate).toISOString().split('T')[0]);
       setValue('vendorId', invoice.vendorId);
+      setValue('poNumber', invoice.poNumber || '');
+      setValue('poDate', invoice.poDate ? new Date(invoice.poDate).toISOString().split('T')[0] : '');
       setValue('particulars', invoice.particulars);
       setValue('poQty', invoice.poQty);
       setValue('qtyDispatched', invoice.qtyDispatched);
@@ -123,6 +129,8 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
       invoiceDate: new Date(data.invoiceDate),
       vendorId: data.vendorId,
       vendorName: vendor.name,
+      poNumber: data.poNumber,
+      poDate: data.poDate ? new Date(data.poDate) : undefined,
       particulars: data.particulars,
       poQty: data.poQty,
       qtyDispatched: data.qtyDispatched,
@@ -224,6 +232,26 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
                 value={vendors.find(v => v.id === selectedVendorId)?.name || ''}
                 readOnly
                 className="bg-muted"
+              />
+            </div>
+
+            {/* PO Number */}
+            <div className="space-y-2">
+              <Label htmlFor="poNumber">PO Number</Label>
+              <Input
+                id="poNumber"
+                {...register('poNumber')}
+                placeholder="PO-2025-001"
+              />
+            </div>
+
+            {/* PO Date */}
+            <div className="space-y-2">
+              <Label htmlFor="poDate">PO Date</Label>
+              <Input
+                id="poDate"
+                type="date"
+                {...register('poDate')}
               />
             </div>
           </div>
