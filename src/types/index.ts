@@ -19,10 +19,13 @@ export interface PurchaseOrder {
   vendorId: string;
   vendorName: string;
   poDate: Date;
-  dueDate: Date;
-  totalAmount: number;
-  advancePaid: number;
-  balanceAmount: number;
+  particulars: string;
+  poQty: number;
+  basicAmount: number;
+  gstPercent: number;
+  gstAmount: number; // auto: basicAmount * gstPercent / 100
+  total: number; // auto: basicAmount + gstAmount
+  balanceQty: number; // auto: poQty - receivedQty (from invoices)
   status: POStatus;
   notes?: string;
   createdAt: Date;

@@ -33,7 +33,7 @@ const Dashboard = () => {
     return months.map(month => {
       const poAmount = purchaseOrders
         .filter(po => new Date(po.poDate).toLocaleString('default', { month: 'short' }) === month)
-        .reduce((sum, po) => sum + po.totalAmount, 0);
+        .reduce((sum, po) => sum + po.total, 0);
 
       const paidAmount = invoices
         .filter(inv => new Date(inv.invoiceDate).toLocaleString('default', { month: 'short' }) === month)
