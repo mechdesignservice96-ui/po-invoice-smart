@@ -1,6 +1,5 @@
 export type POStatus = 'Created' | 'Ordered' | 'Received' | 'Paid' | 'Completed';
 export type InvoiceStatus = 'Unpaid' | 'Partial' | 'Paid' | 'Overdue';
-export type PaymentMethod = 'Cash' | 'Bank Transfer' | 'Check' | 'Credit Card' | 'UPI';
 
 export interface Vendor {
   id: string;
@@ -54,19 +53,6 @@ export interface Invoice {
   dueDate: Date;
   daysDelayed?: number; // auto: today - dueDate (if overdue)
   poId?: string;
-  createdAt: Date;
-}
-
-export interface Payment {
-  id: string;
-  invoiceId: string;
-  invoiceNumber: string;
-  vendorName: string;
-  paymentDate: Date;
-  amount: number;
-  method: PaymentMethod;
-  referenceNumber: string;
-  remarks?: string;
   createdAt: Date;
 }
 

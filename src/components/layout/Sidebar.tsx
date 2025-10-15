@@ -1,12 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, FileText, Receipt, CreditCard, Users, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, FileText, Receipt, Users, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { title: 'Dashboard', path: '/', icon: LayoutDashboard },
   { title: 'Purchase Orders', path: '/purchase-orders', icon: FileText },
   { title: 'Invoices', path: '/invoices', icon: Receipt },
-  { title: 'Payments', path: '/payments', icon: CreditCard },
   { title: 'Vendors', path: '/vendors', icon: Users },
   { title: 'Reports', path: '/reports', icon: BarChart3 },
 ];

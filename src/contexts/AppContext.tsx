@@ -1,12 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Vendor, PurchaseOrder, Invoice, Payment, DashboardStats } from '@/types';
+import { Vendor, PurchaseOrder, Invoice, DashboardStats } from '@/types';
 import { toast } from 'sonner';
 
 interface AppContextType {
   vendors: Vendor[];
   purchaseOrders: PurchaseOrder[];
   invoices: Invoice[];
-  payments: Payment[];
   dashboardStats: DashboardStats;
   addVendor: (vendor: Omit<Vendor, 'id' | 'createdAt'>) => void;
   updateVendor: (id: string, vendor: Partial<Vendor>) => void;
@@ -17,8 +16,6 @@ interface AppContextType {
   addInvoice: (invoice: Omit<Invoice, 'id' | 'invoiceNumber' | 'createdAt' | 'daysDelayed'>) => void;
   updateInvoice: (id: string, invoice: Partial<Invoice>) => void;
   deleteInvoice: (id: string) => void;
-  addPayment: (payment: Omit<Payment, 'id' | 'createdAt'>) => void;
-  deletePayment: (id: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -27,7 +24,6 @@ const STORAGE_KEYS = {
   VENDORS: 'finance_vendors',
   POS: 'finance_pos',
   INVOICES: 'finance_invoices',
-  PAYMENTS: 'finance_payments',
 };
 
 // Helper function to calculate days delayed
@@ -54,14 +50,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
 
   // Load data from localStorage on mount
   useEffect(() => {
     const loadedVendors = JSON.parse(localStorage.getItem(STORAGE_KEYS.VENDORS) || '[]');
     const loadedPOs = JSON.parse(localStorage.getItem(STORAGE_KEYS.POS) || '[]');
     const loadedInvoices = JSON.parse(localStorage.getItem(STORAGE_KEYS.INVOICES) || '[]');
-    const loadedPayments = JSON.parse(localStorage.getItem(STORAGE_KEYS.PAYMENTS) || '[]');
 
     // Parse dates
     const parseDates = (items: any[], dateFields: string[]) =>
@@ -447,40 +441,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       ];
       localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(dummyInvoices));
       setInvoices(dummyInvoices);
-
-      const dummyPayments: Payment[] = [
-        {
-          id: 'PAY1',
-          invoiceId: 'INV1',
-          invoiceNumber: 'INV-2025-001',
-          vendorName: 'Tech Solutions Ltd',
-          paymentDate: new Date('2025-01-20'),
-          amount: 5000,
-          method: 'Bank Transfer',
-          referenceNumber: 'TXN-001',
-          remarks: 'Advance payment',
-          createdAt: new Date('2025-01-20'),
-        },
-        {
-          id: 'PAY2',
-          invoiceId: 'INV3',
-          invoiceNumber: 'INV-2025-003',
-          vendorName: 'Cloud Services Inc',
-          paymentDate: new Date('2025-01-05'),
-          amount: 8000,
-          method: 'Check',
-          referenceNumber: 'CHK-5001',
-          remarks: 'Full payment',
-          createdAt: new Date('2025-01-05'),
-        },
-      ];
-      localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(dummyPayments));
-      setPayments(dummyPayments);
     } else {
       setVendors(parseDates(loadedVendors, ['createdAt']));
       setPurchaseOrders(parseDates(loadedPOs, ['poDate', 'createdAt']));
       setInvoices(parseDates(loadedInvoices, ['invoiceDate', 'dueDate', 'createdAt']));
-      setPayments(parseDates(loadedPayments, ['paymentDate', 'createdAt']));
     }
   }, []);
 
@@ -496,10 +460,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(invoices));
   }, [invoices]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(payments));
-  }, [payments]);
 
   // Calculate dashboard stats
   const dashboardStats: DashboardStats = {
@@ -591,53 +551,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     toast.success('Invoice deleted successfully');
   };
 
-  const addPayment = (payment: Omit<Payment, 'id' | 'createdAt'>) => {
-    const newPayment: Payment = {
-      ...payment,
-      id: `PAY${Date.now()}`,
-      createdAt: new Date(),
-    };
-    setPayments([...payments, newPayment]);
-
-    // Update the related invoice
-    const invoice = invoices.find(inv => inv.id === payment.invoiceId);
-    if (invoice) {
-      const newAmountReceived = invoice.amountReceived + payment.amount;
-      const newPendingAmount = invoice.totalCost - newAmountReceived;
-      updateInvoice(invoice.id, {
-        amountReceived: newAmountReceived,
-        pendingAmount: newPendingAmount,
-      });
-    }
-
-    toast.success('Payment recorded successfully');
-  };
-
-  const deletePayment = (id: string) => {
-    const payment = payments.find(p => p.id === id);
-    if (payment) {
-      // Update the related invoice
-      const invoice = invoices.find(inv => inv.id === payment.invoiceId);
-      if (invoice) {
-        const newAmountReceived = invoice.amountReceived - payment.amount;
-        const newPendingAmount = invoice.totalCost - newAmountReceived;
-        updateInvoice(invoice.id, {
-          amountReceived: newAmountReceived,
-          pendingAmount: newPendingAmount,
-        });
-      }
-    }
-    setPayments(payments.filter(p => p.id !== id));
-    toast.success('Payment deleted successfully');
-  };
-
   return (
     <AppContext.Provider
       value={{
         vendors,
         purchaseOrders,
         invoices,
-        payments,
         dashboardStats,
         addVendor,
         updateVendor,
@@ -648,8 +567,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addInvoice,
         updateInvoice,
         deleteInvoice,
-        addPayment,
-        deletePayment,
       }}
     >
       {children}
