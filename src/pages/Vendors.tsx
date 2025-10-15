@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useApp } from '@/contexts/AppContext';
+import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 import {
   Table,
   TableBody,
@@ -23,19 +25,58 @@ const Vendors = () => {
       vendor.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleExportToExcel = () => {
+    if (filteredVendors.length === 0) {
+      toast.error('No vendors to export');
+      return;
+    }
+
+    const exportData = filteredVendors.map((vendor, index) => ({
+      'Sl. No': index + 1,
+      'Vendor Name': vendor.name,
+      'Contact Person': vendor.contactPerson,
+      'Email': vendor.email,
+      'Phone': vendor.phone,
+      'Tax ID': vendor.taxId,
+      'Payment Terms (Days)': vendor.paymentTerms,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    
+    const colWidths = [
+      { wch: 8 }, { wch: 25 }, { wch: 20 }, { wch: 30 },
+      { wch: 15 }, { wch: 15 }, { wch: 20 }
+    ];
+    worksheet['!cols'] = colWidths;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Vendors');
+
+    const fileName = `Vendors_Report_${new Date().toISOString().split('T')[0].replace(/-/g, '')}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+
+    toast.success('✅ Export successful — file downloaded');
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="text-2xl">Vendors</CardTitle>
               <CardDescription>Manage your vendor directory</CardDescription>
             </div>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" />
-              Add Vendor
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button variant="outline" className="gap-2" onClick={handleExportToExcel}>
+                <Download className="w-4 h-4" />
+                Export to Excel
+              </Button>
+              <Button className="gap-2">
+                <Plus className="w-4 h-4" />
+                Add Vendor
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
