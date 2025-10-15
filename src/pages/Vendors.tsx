@@ -67,12 +67,13 @@ const Vendors = () => {
               <CardTitle className="text-2xl">Vendors</CardTitle>
               <CardDescription>Manage your vendor directory</CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button variant="outline" className="gap-2" onClick={handleExportToExcel}>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button variant="outline" className="gap-2 w-full sm:w-auto" onClick={handleExportToExcel}>
                 <Download className="w-4 h-4" />
-                Export to Excel
+                <span className="hidden sm:inline">Export to Excel</span>
+                <span className="sm:hidden">Export</span>
               </Button>
-              <Button className="gap-2">
+              <Button className="gap-2 w-full sm:w-auto">
                 <Plus className="w-4 h-4" />
                 Add Vendor
               </Button>
