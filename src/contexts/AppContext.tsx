@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Vendor, PurchaseOrder, Invoice, DashboardStats } from '@/types';
+import { Vendor, PurchaseOrder, Invoice, DashboardStats, Expense } from '@/types';
 import { toast } from 'sonner';
 
 interface AppContextType {
   vendors: Vendor[];
   purchaseOrders: PurchaseOrder[];
   invoices: Invoice[];
+  expenses: Expense[];
   dashboardStats: DashboardStats;
   addVendor: (vendor: Omit<Vendor, 'id' | 'createdAt'>) => void;
   updateVendor: (id: string, vendor: Partial<Vendor>) => void;
@@ -16,6 +17,9 @@ interface AppContextType {
   addInvoice: (invoice: Omit<Invoice, 'id' | 'invoiceNumber' | 'createdAt' | 'daysDelayed'>) => void;
   updateInvoice: (id: string, invoice: Partial<Invoice>) => void;
   deleteInvoice: (id: string) => void;
+  addExpense: (expense: Omit<Expense, 'id' | 'createdAt'>) => void;
+  updateExpense: (id: string, expense: Partial<Expense>) => void;
+  deleteExpense: (id: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -24,6 +28,7 @@ const STORAGE_KEYS = {
   VENDORS: 'finance_vendors',
   POS: 'finance_pos',
   INVOICES: 'finance_invoices',
+  EXPENSES: 'finance_expenses',
 };
 
 // Helper function to calculate days delayed
@@ -50,12 +55,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
 
   // Load data from localStorage on mount
   useEffect(() => {
     const loadedVendors = JSON.parse(localStorage.getItem(STORAGE_KEYS.VENDORS) || '[]');
     const loadedPOs = JSON.parse(localStorage.getItem(STORAGE_KEYS.POS) || '[]');
     const loadedInvoices = JSON.parse(localStorage.getItem(STORAGE_KEYS.INVOICES) || '[]');
+    const loadedExpenses = JSON.parse(localStorage.getItem(STORAGE_KEYS.EXPENSES) || '[]');
 
     // Parse dates
     const parseDates = (items: any[], dateFields: string[]) =>
@@ -441,10 +448,66 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       ];
       localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(dummyInvoices));
       setInvoices(dummyInvoices);
+
+      const dummyExpenses: Expense[] = [
+        {
+          id: 'EXP1',
+          date: new Date('2025-01-20'),
+          category: 'Travel',
+          description: 'Client meeting travel to Mumbai',
+          amount: 8500,
+          paymentMode: 'Card',
+          status: 'Paid',
+          createdAt: new Date('2025-01-20'),
+        },
+        {
+          id: 'EXP2',
+          date: new Date('2025-01-18'),
+          category: 'Rent',
+          description: 'Office rent for January 2025',
+          amount: 50000,
+          paymentMode: 'Bank Transfer',
+          status: 'Paid',
+          createdAt: new Date('2025-01-18'),
+        },
+        {
+          id: 'EXP3',
+          date: new Date('2025-01-15'),
+          category: 'Utilities',
+          description: 'Electricity bill for December 2024',
+          amount: 12000,
+          paymentMode: 'UPI',
+          status: 'Paid',
+          createdAt: new Date('2025-01-15'),
+        },
+        {
+          id: 'EXP4',
+          date: new Date('2025-01-12'),
+          category: 'Supplies',
+          description: 'Office stationery and supplies',
+          amount: 3500,
+          paymentMode: 'Cash',
+          status: 'Paid',
+          createdAt: new Date('2025-01-12'),
+        },
+        {
+          id: 'EXP5',
+          date: new Date('2025-01-10'),
+          category: 'Misc',
+          description: 'Team lunch and refreshments',
+          amount: 4200,
+          paymentMode: 'Card',
+          status: 'Paid',
+          createdAt: new Date('2025-01-10'),
+        },
+      ];
+      localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(dummyExpenses));
+      setExpenses(dummyExpenses);
     } else {
       setVendors(parseDates(loadedVendors, ['createdAt']));
       setPurchaseOrders(parseDates(loadedPOs, ['poDate', 'createdAt']));
       setInvoices(parseDates(loadedInvoices, ['invoiceDate', 'dueDate', 'createdAt']));
+      setExpenses(parseDates(loadedExpenses, ['date', 'createdAt']));
     }
   }, []);
 
@@ -460,6 +523,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(invoices));
   }, [invoices]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
+  }, [expenses]);
 
   // Calculate dashboard stats
   const dashboardStats: DashboardStats = {
@@ -551,12 +618,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     toast.success('Invoice deleted successfully');
   };
 
+  const addExpense = (expense: Omit<Expense, 'id' | 'createdAt'>) => {
+    const newExpense: Expense = {
+      ...expense,
+      id: `EXP${Date.now()}`,
+      createdAt: new Date(),
+    };
+    setExpenses([...expenses, newExpense]);
+    toast.success('Expense added successfully');
+  };
+
+  const updateExpense = (id: string, expense: Partial<Expense>) => {
+    setExpenses(expenses.map(exp => (exp.id === id ? { ...exp, ...expense } : exp)));
+    toast.success('Expense updated successfully');
+  };
+
+  const deleteExpense = (id: string) => {
+    setExpenses(expenses.filter(exp => exp.id !== id));
+    toast.success('Expense deleted successfully');
+  };
+
   return (
     <AppContext.Provider
       value={{
         vendors,
         purchaseOrders,
         invoices,
+        expenses,
         dashboardStats,
         addVendor,
         updateVendor,
@@ -567,6 +655,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addInvoice,
         updateInvoice,
         deleteInvoice,
+        addExpense,
+        updateExpense,
+        deleteExpense,
       }}
     >
       {children}
