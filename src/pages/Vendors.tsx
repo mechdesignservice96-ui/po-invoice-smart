@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useApp } from '@/contexts/AppContext';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
+import { VendorFormModal } from '@/components/vendors/VendorFormModal';
 import {
   Table,
   TableBody,
@@ -18,6 +19,7 @@ import {
 const Vendors = () => {
   const { vendors } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filteredVendors = vendors.filter(
     vendor =>
@@ -73,7 +75,7 @@ const Vendors = () => {
                 <span className="hidden sm:inline">Export to Excel</span>
                 <span className="sm:hidden">Export</span>
               </Button>
-              <Button className="gap-2 w-full sm:w-auto">
+              <Button className="gap-2 w-full sm:w-auto" onClick={() => setIsModalOpen(true)}>
                 <Plus className="w-4 h-4" />
                 Add Vendor
               </Button>
@@ -131,6 +133,11 @@ const Vendors = () => {
           </div>
         </CardContent>
       </Card>
+
+      <VendorFormModal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 };
