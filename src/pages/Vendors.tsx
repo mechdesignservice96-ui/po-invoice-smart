@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Search, Download } from 'lucide-react';
+import { Plus, Search, Download, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { useApp } from '@/contexts/AppContext';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { VendorFormModal } from '@/components/vendors/VendorFormModal';
+import { Vendor } from '@/types';
 import {
   Table,
   TableBody,
@@ -17,9 +18,10 @@ import {
 } from '@/components/ui/table';
 
 const Vendors = () => {
-  const { vendors } = useApp();
+  const { vendors, deleteVendor } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingVendor, setEditingVendor] = useState<Vendor | undefined>(undefined);
 
   const filteredVendors = vendors.filter(
     vendor =>
@@ -58,6 +60,22 @@ const Vendors = () => {
     XLSX.writeFile(workbook, fileName);
 
     toast.success('✅ Export successful — file downloaded');
+  };
+
+  const handleEdit = (vendor: Vendor) => {
+    setEditingVendor(vendor);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = (vendorId: string, vendorName: string) => {
+    if (confirm(`Are you sure you want to delete vendor "${vendorName}"?`)) {
+      deleteVendor(vendorId);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingVendor(undefined);
   };
 
   return (
@@ -107,24 +125,45 @@ const Vendors = () => {
                   <TableHead className="font-semibold">Phone</TableHead>
                   <TableHead className="font-semibold">Tax ID</TableHead>
                   <TableHead className="font-semibold text-center">Payment Terms</TableHead>
+                  <TableHead className="font-semibold text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredVendors.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       No vendors found. Add your first vendor to get started.
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredVendors.map(vendor => (
-                    <TableRow key={vendor.id} className="hover:bg-muted/30 cursor-pointer transition-colors">
+                    <TableRow key={vendor.id} className="hover:bg-muted/30 transition-colors">
                       <TableCell className="font-medium text-primary">{vendor.name}</TableCell>
                       <TableCell>{vendor.contactPerson}</TableCell>
                       <TableCell className="text-muted-foreground">{vendor.email}</TableCell>
                       <TableCell className="text-muted-foreground">{vendor.phone}</TableCell>
                       <TableCell className="font-mono text-sm">{vendor.taxId}</TableCell>
                       <TableCell className="text-center">{vendor.paymentTerms} days</TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(vendor)}
+                            className="h-8 w-8 hover:bg-primary/10"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(vendor.id, vendor.name)}
+                            className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -136,7 +175,8 @@ const Vendors = () => {
 
       <VendorFormModal
         open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
+        vendor={editingVendor}
       />
     </div>
   );
