@@ -71,7 +71,7 @@ const Invoices = () => {
     inv =>
       inv.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       inv.vendorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      inv.lineItems.some(item => item.particulars.toLowerCase().includes(searchQuery.toLowerCase()))
+      (inv.lineItems && inv.lineItems.some(item => item.particulars.toLowerCase().includes(searchQuery.toLowerCase())))
   );
 
   const handleEdit = (invoice: any) => {
@@ -94,7 +94,7 @@ const Invoices = () => {
 
   const handleExportToExcel = () => {
     const exportData = filteredInvoices.flatMap((inv) => 
-      inv.lineItems.map((item, itemIndex) => ({
+      (inv.lineItems || []).map((item, itemIndex) => ({
         'Sl. No': itemIndex === 0 ? `INV-${inv.invoiceNumber}` : '',
         'Invoice No.': itemIndex === 0 ? inv.invoiceNumber : '',
         'Invoice Date': itemIndex === 0 ? formatDate(inv.invoiceDate) : '',
@@ -315,7 +315,7 @@ const Invoices = () => {
                           {inv.poDate ? formatDate(inv.poDate) : '—'}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary">{inv.lineItems.length} item(s)</Badge>
+                          <Badge variant="secondary">{(inv.lineItems || []).length} item(s)</Badge>
                         </TableCell>
                         <TableCell className="text-right font-semibold text-primary">
                           {formatCurrency(inv.totalCost)}
@@ -349,7 +349,7 @@ const Invoices = () => {
                       </TableRow>
                       
                       {/* Expanded Line Items */}
-                      {expandedRows.has(inv.id) && (
+                      {expandedRows.has(inv.id) && inv.lineItems && inv.lineItems.length > 0 && (
                         <TableRow className="bg-muted/20">
                           <TableCell colSpan={15} className="p-0">
                             <div className="px-6 py-4">

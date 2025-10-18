@@ -74,6 +74,47 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return parsed;
       });
 
+    // Migrate old invoice format to new lineItems format
+    const migrateInvoices = (invoices: any[]): Invoice[] => {
+      return invoices.map(inv => {
+        // Check if invoice has old format (direct particulars, poQty, etc.)
+        if (inv.particulars && !inv.lineItems) {
+          // Convert old format to new format
+          return {
+            ...inv,
+            lineItems: [
+              {
+                id: `item-${inv.id}-1`,
+                particulars: inv.particulars,
+                poQty: inv.poQty || 0,
+                qtyDispatched: inv.qtyDispatched || 0,
+                balanceQty: inv.balanceQty || 0,
+                basicAmount: inv.basicAmount || 0,
+                gstPercent: inv.gstPercent || 0,
+                gstAmount: inv.gstAmount || 0,
+                transportationCost: inv.transportationCost || 0,
+                lineTotal: inv.totalCost || 0,
+              },
+            ],
+            // Remove old fields
+            particulars: undefined,
+            poQty: undefined,
+            qtyDispatched: undefined,
+            balanceQty: undefined,
+            basicAmount: undefined,
+            gstPercent: undefined,
+            gstAmount: undefined,
+            transportationCost: undefined,
+          };
+        }
+        // Ensure lineItems exists
+        return {
+          ...inv,
+          lineItems: inv.lineItems || [],
+        };
+      });
+    };
+
     // Initialize with dummy data if empty
     if (loadedVendors.length === 0) {
       const dummyVendors: Vendor[] = [
@@ -410,7 +451,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } else {
       setVendors(parseDates(loadedVendors, ['createdAt']));
       setPurchaseOrders(parseDates(loadedPOs, ['poDate', 'createdAt']));
-      setInvoices(parseDates(loadedInvoices, ['invoiceDate', 'dueDate', 'createdAt']));
+      const migratedInvoices = migrateInvoices(loadedInvoices);
+      setInvoices(parseDates(migratedInvoices, ['invoiceDate', 'dueDate', 'createdAt']));
       setExpenses(parseDates(loadedExpenses, ['date', 'createdAt']));
     }
   }, []);
