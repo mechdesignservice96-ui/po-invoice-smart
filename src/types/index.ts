@@ -1,4 +1,4 @@
-export type POStatus = 'Created' | 'Ordered' | 'Received' | 'Paid' | 'Completed';
+export type SOStatus = 'Draft' | 'Confirmed' | 'Dispatched' | 'Delivered' | 'Completed';
 export type InvoiceStatus = 'Unpaid' | 'Partial' | 'Paid' | 'Overdue';
 export type ExpenseStatus = 'Paid' | 'Pending';
 export type ExpenseCategory = 'Travel' | 'Rent' | 'Utilities' | 'Supplies' | 'Misc';
@@ -15,20 +15,32 @@ export interface Vendor {
   createdAt: Date;
 }
 
-export interface PurchaseOrder {
+export interface Customer {
   id: string;
-  poNumber: string;
-  vendorId: string;
-  vendorName: string;
-  poDate: Date;
+  name: string;
+  contactPerson: string;
+  email: string;
+  phone: string;
+  taxId: string;
+  address: string;
+  paymentTerms: number; // days
+  createdAt: Date;
+}
+
+export interface SaleOrder {
+  id: string;
+  soNumber: string;
+  customerId: string;
+  customerName: string;
+  soDate: Date;
   particulars: string;
-  poQty: number;
+  soQty: number;
   basicAmount: number;
   gstPercent: number;
   gstAmount: number; // auto: basicAmount * gstPercent / 100
   total: number; // auto: basicAmount + gstAmount
-  balanceQty: number; // auto: poQty - receivedQty (from invoices)
-  status: POStatus;
+  balanceQty: number; // auto: soQty - dispatchedQty
+  status: SOStatus;
   notes?: string;
   createdAt: Date;
 }

@@ -7,7 +7,7 @@ import { AppProvider } from "@/contexts/AppContext";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import Dashboard from "./pages/Dashboard";
-import PurchaseOrders from "./pages/PurchaseOrders";
+import SaleOrders from "./pages/SaleOrders";
 import Invoices from "./pages/Invoices";
 import Vendors from "./pages/Vendors";
 import DailyExpenses from "./pages/DailyExpenses";
@@ -30,7 +30,7 @@ const App = () => (
               <main className="flex-1 p-6 overflow-auto">
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
-                  <Route path="/purchase-orders" element={<PurchaseOrders />} />
+                  <Route path="/sale-orders" element={<SaleOrders />} />
                   <Route path="/invoices" element={<Invoices />} />
                   <Route path="/vendors" element={<Vendors />} />
                   <Route path="/expenses" element={<DailyExpenses />} />

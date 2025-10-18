@@ -28,39 +28,39 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useApp } from '@/contexts/AppContext';
-import { PurchaseOrder } from '@/types';
+import { SaleOrder } from '@/types';
 import { toast } from 'sonner';
 
-const poFormSchema = z.object({
-  poNumber: z.string().min(1, 'PO Number is required'),
-  poDate: z.string().min(1, 'PO Date is required'),
-  vendorId: z.string().min(1, 'Vendor is required'),
+const soFormSchema = z.object({
+  soNumber: z.string().min(1, 'SO Number is required'),
+  soDate: z.string().min(1, 'SO Date is required'),
+  customerId: z.string().min(1, 'Customer is required'),
   particulars: z.string().min(1, 'Particulars are required'),
-  poQty: z.coerce.number().positive('Quantity must be positive'),
+  soQty: z.coerce.number().positive('Quantity must be positive'),
   basicAmount: z.coerce.number().positive('Basic Amount must be positive'),
   gstPercent: z.coerce.number().min(0).max(100),
   notes: z.string().optional(),
 });
 
-type POFormValues = z.infer<typeof poFormSchema>;
+type SOFormValues = z.infer<typeof soFormSchema>;
 
-interface POFormModalProps {
+interface SOFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  po?: PurchaseOrder;
+  so?: SaleOrder;
 }
 
-export const POFormModal = ({ open, onOpenChange, po }: POFormModalProps) => {
-  const { vendors, addPurchaseOrder, updatePurchaseOrder, purchaseOrders } = useApp();
+export const SOFormModal = ({ open, onOpenChange, so }: SOFormModalProps) => {
+  const { customers, addSaleOrder, updateSaleOrder, saleOrders } = useApp();
 
-  const form = useForm<POFormValues>({
-    resolver: zodResolver(poFormSchema),
+  const form = useForm<SOFormValues>({
+    resolver: zodResolver(soFormSchema),
     defaultValues: {
-      poNumber: '',
-      poDate: new Date().toISOString().split('T')[0],
-      vendorId: '',
+      soNumber: '',
+      soDate: new Date().toISOString().split('T')[0],
+      customerId: '',
       particulars: '',
-      poQty: 0,
+      soQty: 0,
       basicAmount: 0,
       gstPercent: 18,
       notes: '',
@@ -68,41 +68,41 @@ export const POFormModal = ({ open, onOpenChange, po }: POFormModalProps) => {
   });
 
   useEffect(() => {
-    if (po) {
+    if (so) {
       form.reset({
-        poNumber: po.poNumber,
-        poDate: new Date(po.poDate).toISOString().split('T')[0],
-        vendorId: po.vendorId,
-        particulars: po.particulars,
-        poQty: po.poQty,
-        basicAmount: po.basicAmount,
-        gstPercent: po.gstPercent,
-        notes: po.notes || '',
+        soNumber: so.soNumber,
+        soDate: new Date(so.soDate).toISOString().split('T')[0],
+        customerId: so.customerId,
+        particulars: so.particulars,
+        soQty: so.soQty,
+        basicAmount: so.basicAmount,
+        gstPercent: so.gstPercent,
+        notes: so.notes || '',
       });
     } else {
-      const nextNumber = purchaseOrders.length + 1;
+      const nextNumber = saleOrders.length + 1;
       const year = new Date().getFullYear();
-      const poNumber = `PO-${year}-${String(nextNumber).padStart(3, '0')}`;
+      const soNumber = `SO-${year}-${String(nextNumber).padStart(3, '0')}`;
       form.reset({
-        poNumber,
-        poDate: new Date().toISOString().split('T')[0],
-        vendorId: '',
+        soNumber,
+        soDate: new Date().toISOString().split('T')[0],
+        customerId: '',
         particulars: '',
-        poQty: 0,
+        soQty: 0,
         basicAmount: 0,
         gstPercent: 18,
         notes: '',
       });
     }
-  }, [po, form, purchaseOrders.length]);
+  }, [so, form, saleOrders.length]);
 
-  // Auto-calculate vendor name when vendor changes
-  const selectedVendor = vendors.find(v => v.id === form.watch('vendorId'));
+  // Auto-calculate customer info when customer changes
+  const selectedCustomer = customers.find(c => c.id === form.watch('customerId'));
 
-  const onSubmit = (values: POFormValues) => {
-    const vendor = vendors.find(v => v.id === values.vendorId);
-    if (!vendor) {
-      toast.error('Please select a valid vendor');
+  const onSubmit = (values: SOFormValues) => {
+    const customer = customers.find(c => c.id === values.customerId);
+    if (!customer) {
+      toast.error('Please select a valid customer');
       return;
     }
 
@@ -111,28 +111,28 @@ export const POFormModal = ({ open, onOpenChange, po }: POFormModalProps) => {
     const gstAmount = (basicAmount * gstPercent) / 100;
     const total = basicAmount + gstAmount;
 
-    const poData: Omit<PurchaseOrder, 'id' | 'createdAt'> = {
-      poNumber: values.poNumber,
-      poDate: new Date(values.poDate),
-      vendorId: values.vendorId,
-      vendorName: vendor.name,
+    const soData: Omit<SaleOrder, 'id' | 'createdAt'> = {
+      soNumber: values.soNumber,
+      soDate: new Date(values.soDate),
+      customerId: values.customerId,
+      customerName: customer.name,
       particulars: values.particulars,
-      poQty: Number(values.poQty),
+      soQty: Number(values.soQty),
       basicAmount,
       gstPercent,
       gstAmount,
       total,
-      balanceQty: Number(values.poQty), // Initially all qty is balance
-      status: 'Ordered',
+      balanceQty: Number(values.soQty), // Initially all qty is balance
+      status: 'Confirmed',
       notes: values.notes,
     };
 
-    if (po) {
-      updatePurchaseOrder(po.id, poData);
-      toast.success('Purchase Order updated successfully');
+    if (so) {
+      updateSaleOrder(so.id, soData);
+      toast.success('Sale Order updated successfully');
     } else {
-      addPurchaseOrder(poData);
-      toast.success('Purchase Order created successfully');
+      addSaleOrder(soData);
+      toast.success('Sale Order created successfully');
     }
 
     onOpenChange(false);
@@ -148,9 +148,9 @@ export const POFormModal = ({ open, onOpenChange, po }: POFormModalProps) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>📦 {po ? 'Edit' : 'Add'} Purchase Order</DialogTitle>
+          <DialogTitle>🛒 {so ? 'Edit' : 'Add'} Sale Order</DialogTitle>
           <DialogDescription>
-            {po ? 'Update purchase order details' : 'Create a new purchase order'}
+            {so ? 'Update sale order details' : 'Create a new sale order'}
           </DialogDescription>
         </DialogHeader>
 
@@ -159,12 +159,12 @@ export const POFormModal = ({ open, onOpenChange, po }: POFormModalProps) => {
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="poNumber"
+                name="soNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>PO Number</FormLabel>
+                    <FormLabel>SO Number</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="PO-2025-001" readOnly />
+                      <Input {...field} placeholder="SO-2025-001" readOnly />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -173,10 +173,10 @@ export const POFormModal = ({ open, onOpenChange, po }: POFormModalProps) => {
 
               <FormField
                 control={form.control}
-                name="poDate"
+                name="soDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>PO Date</FormLabel>
+                    <FormLabel>SO Date</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -188,20 +188,20 @@ export const POFormModal = ({ open, onOpenChange, po }: POFormModalProps) => {
 
             <FormField
               control={form.control}
-              name="vendorId"
+              name="customerId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Vendor</FormLabel>
+                  <FormLabel>Customer</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select vendor" />
+                        <SelectValue placeholder="Select customer" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {vendors.map(vendor => (
-                        <SelectItem key={vendor.id} value={vendor.id}>
-                          {vendor.name} ({vendor.taxId})
+                      {customers.map(customer => (
+                        <SelectItem key={customer.id} value={customer.id}>
+                          {customer.name} ({customer.taxId})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -211,10 +211,10 @@ export const POFormModal = ({ open, onOpenChange, po }: POFormModalProps) => {
               )}
             />
 
-            {selectedVendor && (
+            {selectedCustomer && (
               <div className="text-sm text-muted-foreground">
-                Contact: {selectedVendor.contactPerson} | Email: {selectedVendor.email} | Phone:{' '}
-                {selectedVendor.phone}
+                Contact: {selectedCustomer.contactPerson} | Email: {selectedCustomer.email} | Phone:{' '}
+                {selectedCustomer.phone}
               </div>
             )}
 
@@ -239,10 +239,10 @@ export const POFormModal = ({ open, onOpenChange, po }: POFormModalProps) => {
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="poQty"
+                name="soQty"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>PO Quantity</FormLabel>
+                    <FormLabel>SO Quantity</FormLabel>
                     <FormControl>
                       <Input type="number" {...field} placeholder="0" min="0" />
                     </FormControl>
@@ -326,7 +326,7 @@ export const POFormModal = ({ open, onOpenChange, po }: POFormModalProps) => {
               <Button type="button" variant="outline" onClick={() => form.reset()}>
                 🔄 Reset
               </Button>
-              <Button type="submit">💾 Save PO</Button>
+              <Button type="submit">💾 Save SO</Button>
             </div>
           </form>
         </Form>

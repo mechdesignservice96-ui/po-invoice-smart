@@ -19,7 +19,7 @@ const getStatusBadge = (status: InvoiceStatus) => {
 };
 
 const Dashboard = () => {
-  const { dashboardStats, invoices, purchaseOrders } = useApp();
+  const { dashboardStats, invoices, saleOrders } = useApp();
 
   // Get recent overdue invoices
   const overdueInvoices = invoices
@@ -27,13 +27,13 @@ const Dashboard = () => {
     .sort((a, b) => (b.daysDelayed || 0) - (a.daysDelayed || 0))
     .slice(0, 5);
 
-  // Chart data - monthly PO vs Paid
+  // Chart data - monthly SO vs Paid
   const getMonthlyData = () => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
     return months.map(month => {
-      const poAmount = purchaseOrders
-        .filter(po => new Date(po.poDate).toLocaleString('default', { month: 'short' }) === month)
-        .reduce((sum, po) => sum + po.total, 0);
+      const soAmount = saleOrders
+        .filter(so => new Date(so.soDate).toLocaleString('default', { month: 'short' }) === month)
+        .reduce((sum, so) => sum + so.total, 0);
 
       const paidAmount = invoices
         .filter(inv => new Date(inv.invoiceDate).toLocaleString('default', { month: 'short' }) === month)
@@ -41,7 +41,7 @@ const Dashboard = () => {
 
       return {
         month,
-        'PO Value': poAmount,
+        'SO Value': soAmount,
         'Paid Amount': paidAmount,
       };
     });
@@ -52,7 +52,7 @@ const Dashboard = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          title="Total PO Value"
+          title="Total SO Value"
           value={formatCurrency(dashboardStats.totalPOValue)}
           icon={FileText}
           variant="default"
@@ -97,8 +97,8 @@ const Dashboard = () => {
         {/* Chart */}
         <Card className="animate-scale-in">
           <CardHeader>
-            <CardTitle>Monthly PO vs Paid Amount</CardTitle>
-            <CardDescription>Track purchase orders against payments received</CardDescription>
+            <CardTitle>Monthly SO vs Paid Amount</CardTitle>
+            <CardDescription>Track sale orders against payments received</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -115,7 +115,7 @@ const Dashboard = () => {
                   formatter={(value: number) => formatCurrency(value)}
                 />
                 <Legend />
-                <Bar dataKey="PO Value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="SO Value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Paid Amount" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

@@ -1,19 +1,23 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Vendor, PurchaseOrder, Invoice, DashboardStats, Expense } from '@/types';
+import { Vendor, Customer, SaleOrder, Invoice, DashboardStats, Expense } from '@/types';
 import { toast } from 'sonner';
 
 interface AppContextType {
   vendors: Vendor[];
-  purchaseOrders: PurchaseOrder[];
+  customers: Customer[];
+  saleOrders: SaleOrder[];
   invoices: Invoice[];
   expenses: Expense[];
   dashboardStats: DashboardStats;
   addVendor: (vendor: Omit<Vendor, 'id' | 'createdAt'>) => void;
   updateVendor: (id: string, vendor: Partial<Vendor>) => void;
   deleteVendor: (id: string) => void;
-  addPurchaseOrder: (po: Omit<PurchaseOrder, 'id' | 'poNumber' | 'createdAt'>) => void;
-  updatePurchaseOrder: (id: string, po: Partial<PurchaseOrder>) => void;
-  deletePurchaseOrder: (id: string) => void;
+  addCustomer: (customer: Omit<Customer, 'id' | 'createdAt'>) => void;
+  updateCustomer: (id: string, customer: Partial<Customer>) => void;
+  deleteCustomer: (id: string) => void;
+  addSaleOrder: (so: Omit<SaleOrder, 'id' | 'soNumber' | 'createdAt'>) => void;
+  updateSaleOrder: (id: string, so: Partial<SaleOrder>) => void;
+  deleteSaleOrder: (id: string) => void;
   addInvoice: (invoice: Omit<Invoice, 'id' | 'invoiceNumber' | 'createdAt' | 'daysDelayed'>) => void;
   updateInvoice: (id: string, invoice: Partial<Invoice>) => void;
   deleteInvoice: (id: string) => void;
@@ -26,7 +30,8 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
   VENDORS: 'finance_vendors',
-  POS: 'finance_pos',
+  CUSTOMERS: 'finance_customers',
+  SOS: 'finance_sos',
   INVOICES: 'finance_invoices',
   EXPENSES: 'finance_expenses',
 };
@@ -53,14 +58,16 @@ const determineInvoiceStatus = (invoice: Invoice): Invoice['status'] => {
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [saleOrders, setSaleOrders] = useState<SaleOrder[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
 
   // Load data from localStorage on mount
   useEffect(() => {
     const loadedVendors = JSON.parse(localStorage.getItem(STORAGE_KEYS.VENDORS) || '[]');
-    const loadedPOs = JSON.parse(localStorage.getItem(STORAGE_KEYS.POS) || '[]');
+    const loadedCustomers = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOMERS) || '[]');
+    const loadedSOs = JSON.parse(localStorage.getItem(STORAGE_KEYS.SOS) || '[]');
     const loadedInvoices = JSON.parse(localStorage.getItem(STORAGE_KEYS.INVOICES) || '[]');
     const loadedExpenses = JSON.parse(localStorage.getItem(STORAGE_KEYS.EXPENSES) || '[]');
 
@@ -152,95 +159,133 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       localStorage.setItem(STORAGE_KEYS.VENDORS, JSON.stringify(dummyVendors));
       setVendors(dummyVendors);
 
-      const dummyPOs: PurchaseOrder[] = [
+      const dummyCustomers: Customer[] = [
         {
-          id: 'PO1',
-          poNumber: 'PO-2025-001',
-          vendorId: 'V1',
-          vendorName: 'Tech Solutions Ltd',
-          poDate: new Date('2025-01-05'),
-          particulars: 'Dell Latitude 5420 Laptops - i7 11th Gen, 16GB RAM, 512GB SSD',
-          poQty: 100,
-          basicAmount: 250000,
+          id: 'C1',
+          name: 'Acme Corporation',
+          contactPerson: 'Robert Davis',
+          email: 'robert@acmecorp.com',
+          phone: '+1-555-0201',
+          taxId: 'CUST-TAX-001',
+          address: '123 Business St, Corporate City, CC 10001',
+          paymentTerms: 30,
+          createdAt: new Date('2024-01-10'),
+        },
+        {
+          id: 'C2',
+          name: 'Global Retailers Ltd',
+          contactPerson: 'Emily Wilson',
+          email: 'emily@globalretailers.com',
+          phone: '+1-555-0202',
+          taxId: 'CUST-TAX-002',
+          address: '456 Market Ave, Trade Town, TT 20002',
+          paymentTerms: 15,
+          createdAt: new Date('2024-02-15'),
+        },
+        {
+          id: 'C3',
+          name: 'TechWorld Systems',
+          contactPerson: 'David Kumar',
+          email: 'david@techworld.com',
+          phone: '+1-555-0203',
+          taxId: 'CUST-TAX-003',
+          address: '789 Innovation Blvd, Silicon Valley, SV 30003',
+          paymentTerms: 30,
+          createdAt: new Date('2024-03-20'),
+        },
+      ];
+      localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(dummyCustomers));
+      setCustomers(dummyCustomers);
+
+      const dummySOs: SaleOrder[] = [
+        {
+          id: 'SO1',
+          soNumber: 'SO-2025-001',
+          customerId: 'C1',
+          customerName: 'Acme Corporation',
+          soDate: new Date('2025-01-05'),
+          particulars: 'Enterprise Software License - Premium Package with 24/7 Support',
+          soQty: 100,
+          basicAmount: 500000,
           gstPercent: 18,
-          gstAmount: 45000,
-          total: 295000,
+          gstAmount: 90000,
+          total: 590000,
           balanceQty: 40,
-          status: 'Ordered',
-          notes: 'Annual laptop procurement for new employees',
+          status: 'Confirmed',
+          notes: 'Annual enterprise license for 100 users',
           createdAt: new Date('2025-01-05'),
         },
         {
-          id: 'PO2',
-          poNumber: 'PO-2025-002',
-          vendorId: 'V2',
-          vendorName: 'Office Supplies Co',
-          poDate: new Date('2025-01-10'),
-          particulars: 'Ergonomic Office Chairs - Premium Model with Lumbar Support',
-          poQty: 50,
-          basicAmount: 75000,
+          id: 'SO2',
+          soNumber: 'SO-2025-002',
+          customerId: 'C2',
+          customerName: 'Global Retailers Ltd',
+          soDate: new Date('2025-01-10'),
+          particulars: 'POS System Hardware - Terminal & Scanner Bundle',
+          soQty: 50,
+          basicAmount: 150000,
           gstPercent: 12,
-          gstAmount: 9000,
-          total: 84000,
+          gstAmount: 18000,
+          total: 168000,
           balanceQty: 0,
-          status: 'Received',
-          notes: 'Office furniture upgrade project',
+          status: 'Dispatched',
+          notes: 'POS hardware for retail stores',
           createdAt: new Date('2025-01-10'),
         },
         {
-          id: 'PO3',
-          poNumber: 'PO-2025-003',
-          vendorId: 'V3',
-          vendorName: 'Cloud Services Inc',
-          poDate: new Date('2024-12-20'),
-          particulars: 'AWS Cloud Hosting - Q1 2025 Premium Package with 24/7 Support',
-          poQty: 1,
-          basicAmount: 120000,
+          id: 'SO3',
+          soNumber: 'SO-2025-003',
+          customerId: 'C3',
+          customerName: 'TechWorld Systems',
+          soDate: new Date('2024-12-20'),
+          particulars: 'Cloud Infrastructure Setup & Maintenance - Q1 2025',
+          soQty: 1,
+          basicAmount: 240000,
           gstPercent: 18,
-          gstAmount: 21600,
-          total: 141600,
+          gstAmount: 43200,
+          total: 283200,
           balanceQty: 0,
-          status: 'Paid',
-          notes: 'Cloud hosting services Q1',
+          status: 'Delivered',
+          notes: 'Cloud infrastructure services Q1',
           createdAt: new Date('2024-12-20'),
         },
         {
-          id: 'PO4',
-          poNumber: 'PO-2025-004',
-          vendorId: 'V1',
-          vendorName: 'Tech Solutions Ltd',
-          poDate: new Date('2025-01-12'),
-          particulars: 'HP LaserJet Pro Printers - Network enabled with automatic duplex',
-          poQty: 25,
-          basicAmount: 185000,
+          id: 'SO4',
+          soNumber: 'SO-2025-004',
+          customerId: 'C1',
+          customerName: 'Acme Corporation',
+          soDate: new Date('2025-01-12'),
+          particulars: 'Custom CRM Development - Phase 1 with Integration',
+          soQty: 1,
+          basicAmount: 350000,
           gstPercent: 18,
-          gstAmount: 33300,
-          total: 218300,
+          gstAmount: 63000,
+          total: 413000,
           balanceQty: 0,
-          status: 'Received',
-          notes: 'Department printer upgrade',
+          status: 'Dispatched',
+          notes: 'CRM development project',
           createdAt: new Date('2025-01-12'),
         },
         {
-          id: 'PO5',
-          poNumber: 'PO-2025-005',
-          vendorId: 'V3',
-          vendorName: 'Cloud Services Inc',
-          poDate: new Date('2025-01-15'),
-          particulars: 'Microsoft 365 Business Premium Licenses - Annual Subscription',
-          poQty: 150,
-          basicAmount: 480000,
+          id: 'SO5',
+          soNumber: 'SO-2025-005',
+          customerId: 'C3',
+          customerName: 'TechWorld Systems',
+          soDate: new Date('2025-01-15'),
+          particulars: 'IT Consulting Services - Annual Retainer Package',
+          soQty: 12,
+          basicAmount: 960000,
           gstPercent: 18,
-          gstAmount: 86400,
-          total: 566400,
-          balanceQty: 0,
-          status: 'Ordered',
-          notes: 'Company-wide license renewal',
+          gstAmount: 172800,
+          total: 1132800,
+          balanceQty: 10,
+          status: 'Confirmed',
+          notes: 'Monthly consulting retainer',
           createdAt: new Date('2025-01-15'),
         },
       ];
-      localStorage.setItem(STORAGE_KEYS.POS, JSON.stringify(dummyPOs));
-      setPurchaseOrders(dummyPOs);
+      localStorage.setItem(STORAGE_KEYS.SOS, JSON.stringify(dummySOs));
+      setSaleOrders(dummySOs);
 
       const dummyInvoices: Invoice[] = [
         {
@@ -450,7 +495,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setExpenses(dummyExpenses);
     } else {
       setVendors(parseDates(loadedVendors, ['createdAt']));
-      setPurchaseOrders(parseDates(loadedPOs, ['poDate', 'createdAt']));
+      setCustomers(parseDates(loadedCustomers, ['createdAt']));
+      setSaleOrders(parseDates(loadedSOs, ['soDate', 'createdAt']));
       const migratedInvoices = migrateInvoices(loadedInvoices);
       setInvoices(parseDates(migratedInvoices, ['invoiceDate', 'dueDate', 'createdAt']));
       setExpenses(parseDates(loadedExpenses, ['date', 'createdAt']));
@@ -463,8 +509,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [vendors]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.POS, JSON.stringify(purchaseOrders));
-  }, [purchaseOrders]);
+    localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(customers));
+  }, [customers]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SOS, JSON.stringify(saleOrders));
+  }, [saleOrders]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(invoices));
@@ -476,7 +526,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Calculate dashboard stats
   const dashboardStats: DashboardStats = {
-    totalPOValue: purchaseOrders.reduce((sum, po) => sum + po.total, 0),
+    totalPOValue: saleOrders.reduce((sum, so) => sum + so.total, 0),
     totalInvoiced: invoices.reduce((sum, inv) => sum + inv.totalCost, 0),
     totalPaid: invoices.reduce((sum, inv) => sum + inv.amountReceived, 0),
     totalOutstanding: invoices.reduce((sum, inv) => sum + inv.pendingAmount, 0),
@@ -506,26 +556,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     toast.success('Vendor deleted successfully');
   };
 
-  const addPurchaseOrder = (po: Omit<PurchaseOrder, 'id' | 'poNumber' | 'createdAt'>) => {
-    const poNumber = `PO-${new Date().getFullYear()}-${String(purchaseOrders.length + 1).padStart(3, '0')}`;
-    const newPO: PurchaseOrder = {
-      ...po,
-      id: `PO${Date.now()}`,
-      poNumber,
+  const addCustomer = (customer: Omit<Customer, 'id' | 'createdAt'>) => {
+    const newCustomer: Customer = {
+      ...customer,
+      id: `C${Date.now()}`,
       createdAt: new Date(),
     };
-    setPurchaseOrders([...purchaseOrders, newPO]);
-    toast.success(`Purchase Order ${poNumber} created successfully`);
+    setCustomers([...customers, newCustomer]);
+    toast.success('Customer added successfully');
   };
 
-  const updatePurchaseOrder = (id: string, po: Partial<PurchaseOrder>) => {
-    setPurchaseOrders(purchaseOrders.map(p => (p.id === id ? { ...p, ...po } : p)));
-    toast.success('Purchase Order updated successfully');
+  const updateCustomer = (id: string, customer: Partial<Customer>) => {
+    setCustomers(customers.map(c => (c.id === id ? { ...c, ...customer } : c)));
+    toast.success('Customer updated successfully');
   };
 
-  const deletePurchaseOrder = (id: string) => {
-    setPurchaseOrders(purchaseOrders.filter(p => p.id !== id));
-    toast.success('Purchase Order deleted successfully');
+  const deleteCustomer = (id: string) => {
+    setCustomers(customers.filter(c => c.id !== id));
+    toast.success('Customer deleted successfully');
+  };
+
+  const addSaleOrder = (so: Omit<SaleOrder, 'id' | 'soNumber' | 'createdAt'>) => {
+    const soNumber = `SO-${new Date().getFullYear()}-${String(saleOrders.length + 1).padStart(3, '0')}`;
+    const newSO: SaleOrder = {
+      ...so,
+      id: `SO${Date.now()}`,
+      soNumber,
+      createdAt: new Date(),
+    };
+    setSaleOrders([...saleOrders, newSO]);
+    toast.success(`Sale Order ${soNumber} created successfully`);
+  };
+
+  const updateSaleOrder = (id: string, so: Partial<SaleOrder>) => {
+    setSaleOrders(saleOrders.map(s => (s.id === id ? { ...s, ...so } : s)));
+    toast.success('Sale Order updated successfully');
+  };
+
+  const deleteSaleOrder = (id: string) => {
+    setSaleOrders(saleOrders.filter(s => s.id !== id));
+    toast.success('Sale Order deleted successfully');
   };
 
   const addInvoice = (invoice: Omit<Invoice, 'id' | 'invoiceNumber' | 'createdAt' | 'daysDelayed'>) => {
@@ -588,16 +658,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     <AppContext.Provider
       value={{
         vendors,
-        purchaseOrders,
+        customers,
+        saleOrders,
         invoices,
         expenses,
         dashboardStats,
         addVendor,
         updateVendor,
         deleteVendor,
-        addPurchaseOrder,
-        updatePurchaseOrder,
-        deletePurchaseOrder,
+        addCustomer,
+        updateCustomer,
+        deleteCustomer,
+        addSaleOrder,
+        updateSaleOrder,
+        deleteSaleOrder,
         addInvoice,
         updateInvoice,
         deleteInvoice,
