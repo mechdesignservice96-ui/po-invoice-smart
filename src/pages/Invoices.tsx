@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Search, Filter, Download, Edit, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, Search, Filter, Download, Edit, Trash2, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,6 +34,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const getStatusBadge = (status: InvoiceStatus) => {
   const variants: Record<InvoiceStatus, { variant: 'default' | 'success' | 'warning' | 'destructive'; label: string }> = {
@@ -54,12 +55,23 @@ const Invoices = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<string | null>(null);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleRowExpansion = (invoiceId: string) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(invoiceId)) {
+      newExpanded.delete(invoiceId);
+    } else {
+      newExpanded.add(invoiceId);
+    }
+    setExpandedRows(newExpanded);
+  };
 
   const filteredInvoices = invoices.filter(
     inv =>
       inv.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       inv.vendorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      inv.particulars.toLowerCase().includes(searchQuery.toLowerCase())
+      inv.lineItems.some(item => item.particulars.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleEdit = (invoice: any) => {
@@ -81,38 +93,40 @@ const Invoices = () => {
   };
 
   const handleExportToExcel = () => {
-    const exportData = filteredInvoices.map((inv, index) => ({
-      'Sl. No': index + 1,
-      'Invoice No.': inv.invoiceNumber,
-      'Invoice Date': formatDate(inv.invoiceDate),
-      'Vendor ID': inv.vendorId,
-      'Vendor Name': inv.vendorName,
-      'PO Number': inv.poNumber || '',
-      'PO Date': inv.poDate ? formatDate(inv.poDate) : '',
-      'Particulars': inv.particulars,
-      'PO Qty': inv.poQty,
-      'Qty Dispatched': inv.qtyDispatched,
-      'Balance Qty': inv.balanceQty,
-      'Basic Amount (₹)': inv.basicAmount,
-      'GST (%)': inv.gstPercent,
-      'GST Amount (₹)': inv.gstAmount,
-      'Transportation Cost (₹)': inv.transportationCost,
-      'Total Cost (₹)': inv.totalCost,
-      'Amount Received (₹)': inv.amountReceived,
-      'Pending Amount (₹)': inv.pendingAmount,
-      'Status': inv.status,
-      'Due Date': formatDate(inv.dueDate),
-      'Days Delayed': inv.daysDelayed || 0,
-    }));
+    const exportData = filteredInvoices.flatMap((inv) => 
+      inv.lineItems.map((item, itemIndex) => ({
+        'Sl. No': itemIndex === 0 ? `INV-${inv.invoiceNumber}` : '',
+        'Invoice No.': itemIndex === 0 ? inv.invoiceNumber : '',
+        'Invoice Date': itemIndex === 0 ? formatDate(inv.invoiceDate) : '',
+        'Vendor ID': itemIndex === 0 ? inv.vendorId : '',
+        'Vendor Name': itemIndex === 0 ? inv.vendorName : '',
+        'PO Number': itemIndex === 0 ? (inv.poNumber || '') : '',
+        'PO Date': itemIndex === 0 ? (inv.poDate ? formatDate(inv.poDate) : '') : '',
+        'Particulars': item.particulars,
+        'PO Qty': item.poQty,
+        'Qty Dispatched': item.qtyDispatched,
+        'Balance Qty': item.balanceQty,
+        'Basic Amount (₹)': item.basicAmount,
+        'GST (%)': item.gstPercent,
+        'GST Amount (₹)': item.gstAmount,
+        'Transportation Cost (₹)': item.transportationCost,
+        'Line Total (₹)': item.lineTotal,
+        'Total Cost (₹)': itemIndex === 0 ? inv.totalCost : '',
+        'Amount Received (₹)': itemIndex === 0 ? inv.amountReceived : '',
+        'Pending Amount (₹)': itemIndex === 0 ? inv.pendingAmount : '',
+        'Status': itemIndex === 0 ? inv.status : '',
+        'Due Date': itemIndex === 0 ? formatDate(inv.dueDate) : '',
+      }))
+    );
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     
     // Set column widths
     const colWidths = [
-      { wch: 8 }, { wch: 15 }, { wch: 12 }, { wch: 10 }, { wch: 20 },
-      { wch: 15 }, { wch: 12 }, { wch: 30 }, { wch: 10 }, { wch: 12 },
+      { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 10 }, { wch: 20 },
+      { wch: 15 }, { wch: 12 }, { wch: 40 }, { wch: 10 }, { wch: 12 },
       { wch: 12 }, { wch: 15 }, { wch: 8 }, { wch: 12 }, { wch: 15 },
-      { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 12 }, { wch: 12 }
+      { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 12 }
     ];
     worksheet['!cols'] = colWidths;
 
@@ -247,6 +261,7 @@ const Invoices = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
+                  <TableHead className="w-12"></TableHead>
                   <TableHead className="font-semibold">Sl. No</TableHead>
                   <TableHead className="font-semibold">Invoice No.</TableHead>
                   <TableHead className="font-semibold">Date</TableHead>
@@ -254,102 +269,134 @@ const Invoices = () => {
                   <TableHead className="font-semibold">Vendor Name</TableHead>
                   <TableHead className="font-semibold">PO Number</TableHead>
                   <TableHead className="font-semibold">PO Date</TableHead>
-                  <TableHead className="font-semibold">Particulars</TableHead>
-                  <TableHead className="font-semibold text-right">PO Qty</TableHead>
-                  <TableHead className="font-semibold text-right">Dispatched</TableHead>
-                  <TableHead className="font-semibold text-right">Balance</TableHead>
-                  <TableHead className="font-semibold text-right">Basic (₹)</TableHead>
-                  <TableHead className="font-semibold text-right">GST %</TableHead>
-                  <TableHead className="font-semibold text-right">Transport (₹)</TableHead>
+                  <TableHead className="font-semibold">Items</TableHead>
                   <TableHead className="font-semibold text-right">Total (₹)</TableHead>
                   <TableHead className="font-semibold text-right">Received (₹)</TableHead>
                   <TableHead className="font-semibold text-right">Pending (₹)</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
                   <TableHead className="font-semibold">Due Date</TableHead>
-                  <TableHead className="font-semibold text-center">Days Delayed</TableHead>
                   <TableHead className="font-semibold text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredInvoices.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={21} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={15} className="text-center py-8 text-muted-foreground">
                       No invoices found. Create your first invoice to get started.
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredInvoices.map((inv, index) => (
-                    <TableRow key={inv.id} className="hover:bg-muted/30 transition-colors">
-                      <TableCell className="font-medium">{index + 1}</TableCell>
-                      <TableCell className="font-medium text-primary cursor-pointer hover:underline">
-                        {inv.invoiceNumber}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{formatDate(inv.invoiceDate)}</TableCell>
-                      <TableCell>{inv.vendorId}</TableCell>
-                      <TableCell>{inv.vendorName}</TableCell>
-                      <TableCell className="text-muted-foreground">{inv.poNumber || '—'}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {inv.poDate ? formatDate(inv.poDate) : '—'}
-                      </TableCell>
-                      <TableCell className="max-w-[200px] truncate">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="cursor-help">{inv.particulars}</span>
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
-                              <p>{inv.particulars}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </TableCell>
-                      <TableCell className="text-right">{inv.poQty}</TableCell>
-                      <TableCell className="text-right">{inv.qtyDispatched}</TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {inv.balanceQty}
-                      </TableCell>
-                      <TableCell className="text-right">{formatCurrency(inv.basicAmount)}</TableCell>
-                      <TableCell className="text-right">{inv.gstPercent}%</TableCell>
-                      <TableCell className="text-right">{formatCurrency(inv.transportationCost)}</TableCell>
-                      <TableCell className="text-right font-semibold text-primary">
-                        {formatCurrency(inv.totalCost)}
-                      </TableCell>
-                      <TableCell className="text-right text-success">
-                        {formatCurrency(inv.amountReceived)}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold text-destructive">
-                        {formatCurrency(inv.pendingAmount)}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(inv.status)}</TableCell>
-                      <TableCell className="text-muted-foreground">{formatDate(inv.dueDate)}</TableCell>
-                      <TableCell className="text-center">
-                        {inv.daysDelayed && inv.daysDelayed > 0 ? (
-                          <span className="px-2 py-1 bg-destructive/10 text-destructive rounded-md text-sm font-medium">
-                            {inv.daysDelayed} days
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-center gap-2">
+                    <>
+                      <TableRow key={inv.id} className="hover:bg-muted/30 transition-colors">
+                        <TableCell>
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleEdit(inv)}
+                            className="h-8 w-8"
+                            onClick={() => toggleRowExpansion(inv.id)}
                           >
-                            <Edit className="w-4 h-4" />
+                            {expandedRows.has(inv.id) ? (
+                              <ChevronDown className="w-4 h-4" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4" />
+                            )}
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(inv.id)}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                        </TableCell>
+                        <TableCell className="font-medium">{index + 1}</TableCell>
+                        <TableCell className="font-medium text-primary cursor-pointer hover:underline">
+                          {inv.invoiceNumber}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{formatDate(inv.invoiceDate)}</TableCell>
+                        <TableCell>{inv.vendorId}</TableCell>
+                        <TableCell>{inv.vendorName}</TableCell>
+                        <TableCell className="text-muted-foreground">{inv.poNumber || '—'}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {inv.poDate ? formatDate(inv.poDate) : '—'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{inv.lineItems.length} item(s)</Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-primary">
+                          {formatCurrency(inv.totalCost)}
+                        </TableCell>
+                        <TableCell className="text-right text-success">
+                          {formatCurrency(inv.amountReceived)}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-destructive">
+                          {formatCurrency(inv.pendingAmount)}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(inv.status)}</TableCell>
+                        <TableCell className="text-muted-foreground">{formatDate(inv.dueDate)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(inv)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(inv.id)}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      
+                      {/* Expanded Line Items */}
+                      {expandedRows.has(inv.id) && (
+                        <TableRow className="bg-muted/20">
+                          <TableCell colSpan={15} className="p-0">
+                            <div className="px-6 py-4">
+                              <h4 className="text-sm font-semibold mb-3">Line Items Details</h4>
+                              <div className="border rounded-lg overflow-hidden">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow className="bg-muted">
+                                      <TableHead className="font-semibold">Item #</TableHead>
+                                      <TableHead className="font-semibold">Particulars</TableHead>
+                                      <TableHead className="font-semibold text-right">PO Qty</TableHead>
+                                      <TableHead className="font-semibold text-right">Dispatched</TableHead>
+                                      <TableHead className="font-semibold text-right">Balance</TableHead>
+                                      <TableHead className="font-semibold text-right">Basic (₹)</TableHead>
+                                      <TableHead className="font-semibold text-right">GST %</TableHead>
+                                      <TableHead className="font-semibold text-right">GST (₹)</TableHead>
+                                      <TableHead className="font-semibold text-right">Transport (₹)</TableHead>
+                                      <TableHead className="font-semibold text-right">Total (₹)</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {inv.lineItems.map((item, itemIndex) => (
+                                      <TableRow key={item.id}>
+                                        <TableCell className="font-medium">{itemIndex + 1}</TableCell>
+                                        <TableCell className="max-w-[300px]">{item.particulars}</TableCell>
+                                        <TableCell className="text-right">{item.poQty}</TableCell>
+                                        <TableCell className="text-right">{item.qtyDispatched}</TableCell>
+                                        <TableCell className="text-right font-semibold">
+                                          {item.balanceQty}
+                                        </TableCell>
+                                        <TableCell className="text-right">{formatCurrency(item.basicAmount)}</TableCell>
+                                        <TableCell className="text-right">{item.gstPercent}%</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(item.gstAmount)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(item.transportationCost)}</TableCell>
+                                        <TableCell className="text-right font-semibold text-primary">
+                                          {formatCurrency(item.lineTotal)}
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
                   ))
                 )}
               </TableBody>

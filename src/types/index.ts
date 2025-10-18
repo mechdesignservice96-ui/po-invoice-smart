@@ -33,14 +33,8 @@ export interface PurchaseOrder {
   createdAt: Date;
 }
 
-export interface Invoice {
+export interface InvoiceLineItem {
   id: string;
-  invoiceNumber: string;
-  invoiceDate: Date;
-  vendorId: string;
-  vendorName: string;
-  poNumber?: string;
-  poDate?: Date;
   particulars: string;
   poQty: number;
   qtyDispatched: number;
@@ -49,7 +43,19 @@ export interface Invoice {
   gstPercent: number;
   gstAmount: number; // auto: basicAmount * gstPercent / 100
   transportationCost: number;
-  totalCost: number; // auto: basicAmount + gstAmount + transportationCost
+  lineTotal: number; // auto: basicAmount + gstAmount + transportationCost
+}
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  invoiceDate: Date;
+  vendorId: string;
+  vendorName: string;
+  poNumber?: string;
+  poDate?: Date;
+  lineItems: InvoiceLineItem[]; // Multiple line items
+  totalCost: number; // auto: sum of all lineItems.lineTotal
   amountReceived: number;
   pendingAmount: number; // auto: totalCost - amountReceived
   status: InvoiceStatus;
