@@ -98,7 +98,6 @@ const Invoices = () => {
         'Sl. No': itemIndex === 0 ? `INV-${inv.invoiceNumber}` : '',
         'Invoice No.': itemIndex === 0 ? inv.invoiceNumber : '',
         'Invoice Date': itemIndex === 0 ? formatDate(inv.invoiceDate) : '',
-        'Vendor ID': itemIndex === 0 ? inv.vendorId : '',
         'Vendor Name': itemIndex === 0 ? inv.vendorName : '',
         'PO Number': itemIndex === 0 ? (inv.poNumber || '') : '',
         'PO Date': itemIndex === 0 ? (inv.poDate ? formatDate(inv.poDate) : '') : '',
@@ -265,7 +264,6 @@ const Invoices = () => {
                   <TableHead className="font-semibold">Sl. No</TableHead>
                   <TableHead className="font-semibold">Invoice No.</TableHead>
                   <TableHead className="font-semibold">Date</TableHead>
-                  <TableHead className="font-semibold">Vendor ID</TableHead>
                   <TableHead className="font-semibold">Vendor Name</TableHead>
                   <TableHead className="font-semibold">PO Number</TableHead>
                   <TableHead className="font-semibold">PO Date</TableHead>
@@ -281,7 +279,7 @@ const Invoices = () => {
               <TableBody>
                 {filteredInvoices.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={15} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={14} className="text-center py-8 text-muted-foreground">
                       No invoices found. Create your first invoice to get started.
                     </TableCell>
                   </TableRow>
@@ -308,7 +306,6 @@ const Invoices = () => {
                           {inv.invoiceNumber}
                         </TableCell>
                         <TableCell className="text-muted-foreground">{formatDate(inv.invoiceDate)}</TableCell>
-                        <TableCell>{inv.vendorId}</TableCell>
                         <TableCell>{inv.vendorName}</TableCell>
                         <TableCell className="text-muted-foreground">{inv.poNumber || '—'}</TableCell>
                         <TableCell className="text-muted-foreground">
@@ -351,7 +348,7 @@ const Invoices = () => {
                       {/* Expanded Line Items */}
                       {expandedRows.has(inv.id) && inv.lineItems && inv.lineItems.length > 0 && (
                         <TableRow className="bg-muted/20">
-                          <TableCell colSpan={15} className="p-0">
+                          <TableCell colSpan={14} className="p-0">
                             <div className="px-6 py-4">
                               <h4 className="text-sm font-semibold mb-3">Line Items Details</h4>
                               <div className="border rounded-lg overflow-hidden">
