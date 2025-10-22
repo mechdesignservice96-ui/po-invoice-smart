@@ -231,13 +231,20 @@ const SaleOrders = () => {
               customerId: 'C1', // Default customer ID
               customerName: String(row['Customer Name']),
               soDate,
-              particulars: String(row['Particulars / Items']),
-              soQty,
-              basicAmount,
-              gstPercent,
-              gstAmount,
+              lineItems: [
+                {
+                  id: `item-${Date.now()}-${Math.random()}`,
+                  particulars: String(row['Particulars / Items']),
+                  soQty,
+                  qtyDispatched: soQty - balanceQty,
+                  balanceQty,
+                  basicAmount,
+                  gstPercent,
+                  gstAmount,
+                  lineTotal: total,
+                },
+              ],
               total,
-              balanceQty,
               status,
               notes: row['Notes'] || '',
             });
@@ -371,12 +378,10 @@ const SaleOrders = () => {
                   <TableHead className="font-semibold">SO Number</TableHead>
                   <TableHead className="font-semibold">SO Date</TableHead>
                   <TableHead className="font-semibold">Customer</TableHead>
-                  <TableHead className="font-semibold">Particulars</TableHead>
-                  <TableHead className="font-semibold text-right">SO Qty</TableHead>
-                  <TableHead className="font-semibold text-right">Basic Amount</TableHead>
-                  <TableHead className="font-semibold text-right">GST (%)</TableHead>
+                  <TableHead className="font-semibold">PO Number</TableHead>
+                  <TableHead className="font-semibold">PO Date</TableHead>
+                  <TableHead className="font-semibold">Items</TableHead>
                   <TableHead className="font-semibold text-right">Total</TableHead>
-                  <TableHead className="font-semibold text-right">Balance Qty</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
                   <TableHead className="font-semibold">Actions</TableHead>
                 </TableRow>
@@ -384,7 +389,7 @@ const SaleOrders = () => {
               <TableBody>
                 {filteredSOs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                       No sale orders found. Create your first SO to get started.
                     </TableCell>
                   </TableRow>
@@ -395,16 +400,18 @@ const SaleOrders = () => {
                       <TableCell className="font-medium text-primary">{so.soNumber}</TableCell>
                       <TableCell className="text-muted-foreground">{formatDate(so.soDate)}</TableCell>
                       <TableCell>{so.customerName}</TableCell>
-                      <TableCell className="max-w-xs truncate" title={so.particulars}>
-                        {so.particulars}
+                      <TableCell className="text-muted-foreground">{so.poNumber || '-'}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {so.poDate ? formatDate(so.poDate) : '-'}
                       </TableCell>
-                      <TableCell className="text-right">{so.soQty}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(so.basicAmount)}</TableCell>
-                      <TableCell className="text-right">{so.gstPercent}%</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {so.lineItems.length} item{so.lineItems.length !== 1 ? 's' : ''}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-right font-semibold">
                         {formatCurrency(so.total)}
                       </TableCell>
-                      <TableCell className="text-right">{so.balanceQty}</TableCell>
                       <TableCell>{getStatusBadge(so.status)}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">

@@ -27,22 +27,38 @@ export interface Customer {
   createdAt: Date;
 }
 
+export interface SOLineItem {
+  id: string;
+  particulars: string;
+  soQty: number;
+  qtyDispatched: number;
+  balanceQty: number; // auto: soQty - qtyDispatched
+  basicAmount: number;
+  gstPercent: number;
+  gstAmount: number; // auto: basicAmount * gstPercent / 100
+  lineTotal: number; // auto: basicAmount + gstAmount
+}
+
 export interface SaleOrder {
   id: string;
   soNumber: string;
   customerId: string;
   customerName: string;
   soDate: Date;
-  particulars: string;
-  soQty: number;
-  basicAmount: number;
-  gstPercent: number;
-  gstAmount: number; // auto: basicAmount * gstPercent / 100
-  total: number; // auto: basicAmount + gstAmount
-  balanceQty: number; // auto: soQty - dispatchedQty
+  poNumber?: string;
+  poDate?: Date;
+  lineItems: SOLineItem[]; // Multiple line items
+  total: number; // auto: sum of all lineItems.lineTotal
   status: SOStatus;
   notes?: string;
   createdAt: Date;
+  // Legacy fields (kept for migration)
+  particulars?: string;
+  soQty?: number;
+  basicAmount?: number;
+  gstPercent?: number;
+  gstAmount?: number;
+  balanceQty?: number;
 }
 
 export interface InvoiceLineItem {
