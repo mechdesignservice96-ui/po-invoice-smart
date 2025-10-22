@@ -1,4 +1,4 @@
-import { DollarSign, TrendingUp, AlertTriangle, CheckCircle2, FileText, Clock } from 'lucide-react';
+import { IndianRupee, TrendingUp, AlertTriangle, CheckCircle2, FileText, Clock } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useApp } from '@/contexts/AppContext';
 import { formatCurrency } from '@/utils/formatters';
@@ -114,7 +114,7 @@ const Dashboard = () => {
         <StatCard
           title="Outstanding"
           value={formatCurrency(dashboardStats.totalOutstanding)}
-          icon={DollarSign}
+          icon={IndianRupee}
           variant="warning"
         />
       </div>
