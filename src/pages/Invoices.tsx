@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { Plus, Search, Filter, Download, FileUp, Edit, Trash2, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Plus, Search, Filter, Download, FileUp, Edit, Trash2, AlertCircle, ChevronDown, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { formatCurrency, formatDate } from '@/utils/formatters';
 import { InvoiceStatus } from '@/types';
 import { InvoiceFormModal } from '@/components/invoices/InvoiceFormModal';
 import { useToast } from '@/hooks/use-toast';
+import { useSearchParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import {
   Table,
@@ -48,8 +49,9 @@ const getStatusBadge = (status: InvoiceStatus) => {
 };
 
 const Invoices = () => {
-  const { invoices, deleteInvoice, addInvoice } = useApp();
+  const { invoices, deleteInvoice, addInvoice, vendors } = useApp();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -57,6 +59,21 @@ const Invoices = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [vendorFilter, setVendorFilter] = useState<string | null>(null);
+
+  // Read vendor filter from URL params
+  useEffect(() => {
+    const vendorId = searchParams.get('vendor');
+    if (vendorId) {
+      setVendorFilter(vendorId);
+    }
+  }, [searchParams]);
+
+  const clearVendorFilter = () => {
+    setVendorFilter(null);
+    searchParams.delete('vendor');
+    setSearchParams(searchParams);
+  };
 
   const toggleRowExpansion = (invoiceId: string) => {
     const newExpanded = new Set(expandedRows);
@@ -68,12 +85,21 @@ const Invoices = () => {
     setExpandedRows(newExpanded);
   };
 
-  const filteredInvoices = invoices.filter(
-    inv =>
-      inv.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  const filteredInvoices = invoices.filter(inv => {
+    const matchesSearch = inv.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       inv.vendorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (inv.lineItems && inv.lineItems.some(item => item.particulars.toLowerCase().includes(searchQuery.toLowerCase())))
-  );
+      (inv.lineItems && inv.lineItems.some(item => item.particulars.toLowerCase().includes(searchQuery.toLowerCase())));
+    
+    const matchesVendor = !vendorFilter || inv.vendorId === vendorFilter;
+    
+    return matchesSearch && matchesVendor;
+  });
+
+  const getFilteredVendorName = () => {
+    if (!vendorFilter) return '';
+    const vendor = vendors.find(v => v.id === vendorFilter);
+    return vendor?.name || '';
+  };
 
   const handleEdit = (invoice: any) => {
     setSelectedInvoice(invoice);
@@ -458,20 +484,37 @@ const Invoices = () => {
         </CardHeader>
         <CardContent>
           {/* Search and Filters */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by invoice number, vendor, or particulars..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+          <div className="flex flex-col gap-4 mb-6">
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by invoice number, vendor, or particulars..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button variant="outline" className="gap-2">
+                <Filter className="w-4 h-4" />
+                Filter
+              </Button>
             </div>
-            <Button variant="outline" className="gap-2">
-              <Filter className="w-4 h-4" />
-              Filter
-            </Button>
+
+            {/* Vendor Filter Badge */}
+            {vendorFilter && (
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-sm gap-2">
+                  Vendor: {getFilteredVendorName()}
+                  <button onClick={clearVendorFilter} className="hover:bg-muted rounded-full p-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+                <span className="text-sm text-muted-foreground">
+                  Showing {filteredInvoices.length} invoice{filteredInvoices.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Table */}

@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
-import { Plus, Search, Filter, FileDown, FileUp, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, FileDown, FileUp, Edit, Trash2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useApp } from '@/contexts/AppContext';
+import { useNavigate } from 'react-router-dom';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 import { SOStatus } from '@/types';
 import { SOFormModal } from '@/components/sale-orders/SOFormModal';
@@ -45,13 +46,19 @@ const getStatusBadge = (status: SOStatus) => {
 };
 
 const SaleOrders = () => {
-  const { saleOrders, deleteSaleOrder, addSaleOrder } = useApp();
+  const { saleOrders, deleteSaleOrder, addSaleOrder, customers } = useApp();
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSO, setSelectedSO] = useState<(typeof saleOrders)[0] | undefined>(undefined);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [soToDelete, setSOToDelete] = useState<string | null>(null);
+
+  // Get customer info
+  const getCustomerInfo = (customerId: string) => {
+    return customers.find(c => c.id === customerId);
+  };
 
   const filteredSOs = saleOrders.filter(
     so =>
@@ -394,47 +401,66 @@ const SaleOrders = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredSOs.map((so, index) => (
-                    <TableRow key={so.id} className="hover:bg-muted/30 transition-colors">
-                      <TableCell className="text-muted-foreground">{index + 1}</TableCell>
-                      <TableCell className="font-medium text-primary">{so.soNumber}</TableCell>
-                      <TableCell className="text-muted-foreground">{formatDate(so.soDate)}</TableCell>
-                      <TableCell>{so.customerName}</TableCell>
-                      <TableCell className="text-muted-foreground">{so.poNumber || '-'}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {so.poDate ? formatDate(so.poDate) : '-'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {so.lineItems.length} item{so.lineItems.length !== 1 ? 's' : ''}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {formatCurrency(so.total)}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(so.status)}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(so)}
-                            className="h-8 w-8"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(so.id)}
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filteredSOs.map((so, index) => {
+                    const customer = getCustomerInfo(so.customerId);
+                    return (
+                      <TableRow key={so.id} className="hover:bg-muted/30 transition-colors">
+                        <TableCell className="text-muted-foreground">{index + 1}</TableCell>
+                        <TableCell className="font-medium text-primary">{so.soNumber}</TableCell>
+                        <TableCell className="text-muted-foreground">{formatDate(so.soDate)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span>{so.customerName}</span>
+                            {customer && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => {
+                                  toast.success(`Customer: ${customer.name}\nContact: ${customer.contactPerson}\nEmail: ${customer.email}\nPhone: ${customer.phone}`);
+                                }}
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{so.poNumber || '-'}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {so.poDate ? formatDate(so.poDate) : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {so.lineItems.length} item{so.lineItems.length !== 1 ? 's' : ''}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {formatCurrency(so.total)}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(so.status)}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(so)}
+                              className="h-8 w-8"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(so.id)}
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
