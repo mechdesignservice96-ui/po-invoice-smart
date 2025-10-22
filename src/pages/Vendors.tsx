@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Plus, Search, Download, FileUp, Edit, Trash2, FileText, ExternalLink } from 'lucide-react';
+import { Plus, Search, Download, FileUp, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,17 +20,11 @@ import {
 } from '@/components/ui/table';
 
 const Vendors = () => {
-  const { vendors, deleteVendor, addVendor, invoices } = useApp();
-  const navigate = useNavigate();
+  const { vendors, deleteVendor, addVendor } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | undefined>(undefined);
-
-  // Get invoice count for each vendor
-  const getVendorInvoiceCount = (vendorId: string) => {
-    return invoices.filter(inv => inv.vendorId === vendorId).length;
-  };
 
   const filteredVendors = vendors.filter(
     vendor =>
@@ -45,7 +39,7 @@ const Vendors = () => {
       'Contact Person': 'John Smith',
       'Email': 'john.smith@samplevendor.com',
       'Phone': '+91-9876543210',
-      'Tax ID': 'GST123456789',
+      'GST-TIN Number': 'GST123456789',
       'Payment Terms (Days)': 30,
     }];
 
@@ -77,7 +71,7 @@ const Vendors = () => {
       'Contact Person': vendor.contactPerson,
       'Email': vendor.email,
       'Phone': vendor.phone,
-      'Tax ID': vendor.taxId,
+      'GST-TIN Number': vendor.gstTin,
       'Payment Terms (Days)': vendor.paymentTerms,
     }));
 
@@ -135,7 +129,7 @@ const Vendors = () => {
               contactPerson: String(row['Contact Person'] || ''),
               email: String(row['Email']),
               phone: String(row['Phone'] || ''),
-              taxId: String(row['Tax ID'] || ''),
+              gstTin: String(row['GST-TIN Number'] || ''),
               paymentTerms: Number(row['Payment Terms (Days)']) || 30,
             });
 
@@ -243,13 +237,13 @@ const Vendors = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
+                  <TableHead className="font-semibold">Sl. No</TableHead>
                   <TableHead className="font-semibold">Vendor Name</TableHead>
                   <TableHead className="font-semibold">Contact Person</TableHead>
                   <TableHead className="font-semibold">Email</TableHead>
                   <TableHead className="font-semibold">Phone</TableHead>
-                  <TableHead className="font-semibold">Tax ID</TableHead>
+                  <TableHead className="font-semibold">GST-TIN Number</TableHead>
                   <TableHead className="font-semibold text-center">Payment Terms</TableHead>
-                  <TableHead className="font-semibold text-center">Invoices</TableHead>
                   <TableHead className="font-semibold text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -261,50 +255,37 @@ const Vendors = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredVendors.map(vendor => {
-                    const invoiceCount = getVendorInvoiceCount(vendor.id);
-                    return (
-                      <TableRow key={vendor.id} className="hover:bg-muted/30 transition-colors">
-                        <TableCell className="font-medium text-primary">{vendor.name}</TableCell>
-                        <TableCell>{vendor.contactPerson}</TableCell>
-                        <TableCell className="text-muted-foreground">{vendor.email}</TableCell>
-                        <TableCell className="text-muted-foreground">{vendor.phone}</TableCell>
-                        <TableCell className="font-mono text-sm">{vendor.taxId}</TableCell>
-                        <TableCell className="text-center">{vendor.paymentTerms} days</TableCell>
-                        <TableCell className="text-center">
+                  filteredVendors.map((vendor, index) => (
+                    <TableRow key={vendor.id} className="hover:bg-muted/30 transition-colors">
+                      <TableCell className="text-center">{index + 1}</TableCell>
+                      <TableCell className="font-medium text-primary">{vendor.name}</TableCell>
+                      <TableCell>{vendor.contactPerson}</TableCell>
+                      <TableCell className="text-muted-foreground">{vendor.email}</TableCell>
+                      <TableCell className="text-muted-foreground">{vendor.phone}</TableCell>
+                      <TableCell className="font-mono text-sm">{vendor.gstTin}</TableCell>
+                      <TableCell className="text-center">{vendor.paymentTerms} days</TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
                           <Button
                             variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/invoices?vendor=${vendor.id}`)}
-                            className="gap-2"
+                            size="icon"
+                            onClick={() => handleEdit(vendor)}
+                            className="h-8 w-8 hover:bg-primary/10"
                           >
-                            <FileText className="w-4 h-4" />
-                            <Badge variant="secondary">{invoiceCount}</Badge>
+                            <Edit className="w-4 h-4" />
                           </Button>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEdit(vendor)}
-                              className="h-8 w-8 hover:bg-primary/10"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDelete(vendor.id, vendor.name)}
-                              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(vendor.id, vendor.name)}
+                            className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
               </TableBody>
             </Table>

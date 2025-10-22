@@ -10,7 +10,7 @@ export interface Vendor {
   contactPerson: string;
   email: string;
   phone: string;
-  taxId: string;
+  gstTin: string;
   paymentTerms: number; // days
   createdAt: Date;
 }

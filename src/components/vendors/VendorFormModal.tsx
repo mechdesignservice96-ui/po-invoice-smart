@@ -14,7 +14,7 @@ const vendorSchema = z.object({
   contactPerson: z.string().min(1, 'Contact person is required'),
   email: z.string().email('Invalid email address'),
   phone: z.string().min(10, 'Phone number must be at least 10 digits'),
-  taxId: z.string().min(1, 'Tax ID is required'),
+  gstTin: z.string().min(1, 'GST-TIN Number is required'),
   paymentTerms: z.number().min(0, 'Payment terms must be positive'),
 });
 
@@ -42,7 +42,7 @@ export function VendorFormModal({ open, onClose, vendor }: VendorFormModalProps)
       contactPerson: '',
       email: '',
       phone: '',
-      taxId: '',
+      gstTin: '',
       paymentTerms: 30,
     },
   });
@@ -53,7 +53,7 @@ export function VendorFormModal({ open, onClose, vendor }: VendorFormModalProps)
       setValue('contactPerson', vendor.contactPerson);
       setValue('email', vendor.email);
       setValue('phone', vendor.phone);
-      setValue('taxId', vendor.taxId);
+      setValue('gstTin', vendor.gstTin);
       setValue('paymentTerms', vendor.paymentTerms);
     }
   }, [vendor, setValue]);
@@ -64,7 +64,7 @@ export function VendorFormModal({ open, onClose, vendor }: VendorFormModalProps)
       contactPerson: data.contactPerson,
       email: data.email,
       phone: data.phone,
-      taxId: data.taxId,
+      gstTin: data.gstTin,
       paymentTerms: data.paymentTerms,
     };
 
@@ -146,16 +146,16 @@ export function VendorFormModal({ open, onClose, vendor }: VendorFormModalProps)
               )}
             </div>
 
-            {/* Tax ID */}
+            {/* GST-TIN Number */}
             <div className="space-y-2">
-              <Label htmlFor="taxId">Tax ID *</Label>
+              <Label htmlFor="gstTin">GST-TIN Number *</Label>
               <Input
-                id="taxId"
-                {...register('taxId')}
-                placeholder="TAX123456"
+                id="gstTin"
+                {...register('gstTin')}
+                placeholder="GST123456789"
               />
-              {errors.taxId && (
-                <p className="text-sm text-destructive">{errors.taxId.message}</p>
+              {errors.gstTin && (
+                <p className="text-sm text-destructive">{errors.gstTin.message}</p>
               )}
             </div>
 
