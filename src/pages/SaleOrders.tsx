@@ -89,6 +89,44 @@ const SaleOrders = () => {
     setIsModalOpen(true);
   };
 
+  const handleDownloadTemplate = () => {
+    const templateData = [{
+      'Sl. No': 1,
+      'SO Number': 'SO-2025-001',
+      'SO Date': '2025-01-22',
+      'Customer Name': 'Sample Customer Ltd',
+      'Particulars / Items': 'Sample Product or Service Description',
+      'SO Qty': 10,
+      'Basic Amount (₹)': 100000,
+      'GST (%)': 18,
+      'GST Amount (₹)': 18000,
+      'Total (₹)': 118000,
+      'Balance Qty': 10,
+      'Status': 'Draft',
+    }];
+
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    
+    const maxWidth = 20;
+    const colWidths = Object.keys(templateData[0]).map(key => ({
+      wch: Math.min(
+        Math.max(
+          key.length,
+          ...templateData.map(row => String(row[key as keyof typeof row]).length)
+        ),
+        maxWidth
+      ),
+    }));
+    worksheet['!cols'] = colWidths;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sale Orders');
+
+    XLSX.writeFile(workbook, 'SaleOrders_Import_Template.xlsx');
+
+    toast.success('✅ Template downloaded — use this format for importing');
+  };
+
   const handleExportToExcel = () => {
     if (filteredSOs.length === 0) {
       toast.error('No sale orders to export');
@@ -287,6 +325,10 @@ const SaleOrders = () => {
                 onChange={handleImportFromExcel}
                 className="hidden"
               />
+              <Button variant="outline" className="gap-2" onClick={handleDownloadTemplate}>
+                <FileDown className="w-4 h-4" />
+                Download Template
+              </Button>
               <Button variant="outline" className="gap-2" onClick={handleImportClick}>
                 <FileUp className="w-4 h-4" />
                 Import from Excel

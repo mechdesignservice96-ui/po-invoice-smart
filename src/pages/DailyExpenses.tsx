@@ -65,6 +65,27 @@ const DailyExpenses = () => {
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
   const averageDailySpend = totalExpensesThisMonth / daysInMonth;
 
+  const handleDownloadTemplate = () => {
+    const templateData = [{
+      'Sl. No': 1,
+      'Date': '2025-01-22',
+      'Category': 'Office Supplies',
+      'Description': 'Sample expense description - Printer Paper A4',
+      'Payment Mode': 'Cash',
+      'Amount (₹)': 5000,
+      'Status': 'Paid',
+      'Attachment': 'N/A',
+    }];
+
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Daily Expenses');
+
+    XLSX.writeFile(workbook, 'Daily_Expenses_Import_Template.xlsx');
+
+    toast.success('✅ Template downloaded — use this format for importing');
+  };
+
   const handleExport = () => {
     if (filteredExpenses.length === 0) {
       toast.error('No expenses to export');
@@ -269,6 +290,11 @@ const DailyExpenses = () => {
               <Button onClick={() => setIsModalOpen(true)} className="gap-2">
                 <Plus className="w-4 h-4" />
                 Add Expense
+              </Button>
+              <Button onClick={handleDownloadTemplate} variant="outline" className="gap-2">
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">Download Template</span>
+                <span className="sm:hidden">Template</span>
               </Button>
               <Button onClick={handleImportClick} variant="outline" className="gap-2">
                 <FileUp className="w-4 h-4" />

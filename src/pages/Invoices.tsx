@@ -93,6 +93,75 @@ const Invoices = () => {
     }
   };
 
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        'Sl. No': 'INV-001',
+        'Invoice No.': 'INV-2025-001',
+        'Invoice Date': '2025-01-22',
+        'Vendor Name': 'Sample Vendor Ltd',
+        'PO Number': 'PO-2025-001',
+        'PO Date': '2025-01-20',
+        'Particulars': 'Sample Item 1 - Product Description',
+        'PO Qty': 100,
+        'Qty Dispatched': 100,
+        'Balance Qty': 0,
+        'Basic Amount (₹)': 50000,
+        'GST (%)': 18,
+        'GST Amount (₹)': 9000,
+        'Transportation Cost (₹)': 1000,
+        'Line Total (₹)': 60000,
+        'Total Cost (₹)': 120000,
+        'Amount Received (₹)': 60000,
+        'Pending Amount (₹)': 60000,
+        'Status': 'Partial',
+        'Due Date': '2025-02-22',
+      },
+      {
+        'Sl. No': '',
+        'Invoice No.': '',
+        'Invoice Date': '',
+        'Vendor Name': '',
+        'PO Number': '',
+        'PO Date': '',
+        'Particulars': 'Sample Item 2 - Another Product',
+        'PO Qty': 50,
+        'Qty Dispatched': 50,
+        'Balance Qty': 0,
+        'Basic Amount (₹)': 50000,
+        'GST (%)': 18,
+        'GST Amount (₹)': 9000,
+        'Transportation Cost (₹)': 1000,
+        'Line Total (₹)': 60000,
+        'Total Cost (₹)': '',
+        'Amount Received (₹)': '',
+        'Pending Amount (₹)': '',
+        'Status': '',
+        'Due Date': '',
+      }
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    
+    const colWidths = [
+      { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 10 }, { wch: 20 },
+      { wch: 15 }, { wch: 12 }, { wch: 40 }, { wch: 10 }, { wch: 12 },
+      { wch: 12 }, { wch: 15 }, { wch: 8 }, { wch: 12 }, { wch: 15 },
+      { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 12 }
+    ];
+    worksheet['!cols'] = colWidths;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Invoices');
+
+    XLSX.writeFile(workbook, 'Invoices_Import_Template.xlsx');
+
+    toast({
+      title: '✅ Template Downloaded',
+      description: 'Use this format for importing invoices. Multiple line items share the same invoice number.',
+    });
+  };
+
   const handleExportToExcel = () => {
     const exportData = filteredInvoices.flatMap((inv) => 
       (inv.lineItems || []).map((item, itemIndex) => ({
@@ -338,6 +407,19 @@ const Invoices = () => {
                 onChange={handleImportFromExcel}
                 className="hidden"
               />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" className="gap-2" onClick={handleDownloadTemplate}>
+                      <Download className="w-4 h-4" />
+                      Download Template
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Download Excel template for importing</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>

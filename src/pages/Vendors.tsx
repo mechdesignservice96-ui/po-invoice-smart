@@ -30,6 +30,33 @@ const Vendors = () => {
       vendor.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleDownloadTemplate = () => {
+    const templateData = [{
+      'Sl. No': 1,
+      'Vendor Name': 'Sample Vendor Ltd',
+      'Contact Person': 'John Smith',
+      'Email': 'john.smith@samplevendor.com',
+      'Phone': '+91-9876543210',
+      'Tax ID': 'GST123456789',
+      'Payment Terms (Days)': 30,
+    }];
+
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    
+    const colWidths = [
+      { wch: 8 }, { wch: 25 }, { wch: 20 }, { wch: 30 },
+      { wch: 15 }, { wch: 15 }, { wch: 20 }
+    ];
+    worksheet['!cols'] = colWidths;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Vendors');
+
+    XLSX.writeFile(workbook, 'Vendors_Import_Template.xlsx');
+
+    toast.success('✅ Template downloaded — use this format for importing');
+  };
+
   const handleExportToExcel = () => {
     if (filteredVendors.length === 0) {
       toast.error('No vendors to export');
@@ -167,6 +194,11 @@ const Vendors = () => {
                 onChange={handleImportFromExcel}
                 className="hidden"
               />
+              <Button variant="outline" className="gap-2 w-full sm:w-auto" onClick={handleDownloadTemplate}>
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">Download Template</span>
+                <span className="sm:hidden">Template</span>
+              </Button>
               <Button variant="outline" className="gap-2 w-full sm:w-auto" onClick={handleImportClick}>
                 <FileUp className="w-4 h-4" />
                 <span className="hidden sm:inline">Import from Excel</span>
