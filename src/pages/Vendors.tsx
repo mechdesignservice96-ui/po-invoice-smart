@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Search, Download, Edit, Trash2 } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Plus, Search, Download, FileUp, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +18,8 @@ import {
 } from '@/components/ui/table';
 
 const Vendors = () => {
-  const { vendors, deleteVendor } = useApp();
+  const { vendors, deleteVendor, addVendor } = useApp();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingVendor, setEditingVendor] = useState<Vendor | undefined>(undefined);
@@ -62,6 +63,77 @@ const Vendors = () => {
     toast.success('✅ Export successful — file downloaded');
   };
 
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFromExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        if (jsonData.length === 0) {
+          toast.error('No data found in the Excel file');
+          return;
+        }
+
+        let importedCount = 0;
+        let errorCount = 0;
+
+        jsonData.forEach((row: any) => {
+          try {
+            if (!row['Vendor Name'] || !row['Email']) {
+              errorCount++;
+              return;
+            }
+
+            addVendor({
+              name: String(row['Vendor Name']),
+              contactPerson: String(row['Contact Person'] || ''),
+              email: String(row['Email']),
+              phone: String(row['Phone'] || ''),
+              taxId: String(row['Tax ID'] || ''),
+              paymentTerms: Number(row['Payment Terms (Days)']) || 30,
+            });
+
+            importedCount++;
+          } catch (error) {
+            console.error('Error importing vendor:', error);
+            errorCount++;
+          }
+        });
+
+        if (importedCount > 0) {
+          toast.success(`✅ Successfully imported ${importedCount} vendor${importedCount > 1 ? 's' : ''}`);
+        }
+        if (errorCount > 0) {
+          toast.warning(`⚠️ ${errorCount} row${errorCount > 1 ? 's' : ''} skipped due to missing or invalid data`);
+        }
+      } catch (error) {
+        console.error('Error reading Excel file:', error);
+        toast.error('Failed to import Excel file. Please check the file format.');
+      }
+    };
+
+    reader.onerror = () => {
+      toast.error('Failed to read the file');
+    };
+
+    reader.readAsBinaryString(file);
+    
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
   const handleEdit = (vendor: Vendor) => {
     setEditingVendor(vendor);
     setIsModalOpen(true);
@@ -88,6 +160,18 @@ const Vendors = () => {
               <CardDescription>Manage your vendor directory</CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleImportFromExcel}
+                className="hidden"
+              />
+              <Button variant="outline" className="gap-2 w-full sm:w-auto" onClick={handleImportClick}>
+                <FileUp className="w-4 h-4" />
+                <span className="hidden sm:inline">Import from Excel</span>
+                <span className="sm:hidden">Import</span>
+              </Button>
               <Button variant="outline" className="gap-2 w-full sm:w-auto" onClick={handleExportToExcel}>
                 <Download className="w-4 h-4" />
                 <span className="hidden sm:inline">Export to Excel</span>

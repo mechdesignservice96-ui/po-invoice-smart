@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Plus, Search, Download, Edit, Trash2, Wallet, Calendar, TrendingUp, DollarSign } from 'lucide-react';
+import { useState, useMemo, useRef } from 'react';
+import { Plus, Search, Download, FileUp, Edit, Trash2, Wallet, Calendar, TrendingUp, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +20,8 @@ import {
 } from '@/components/ui/table';
 
 const DailyExpenses = () => {
-  const { expenses, deleteExpense } = useApp();
+  const { expenses, deleteExpense, addExpense } = useApp();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>(undefined);
@@ -91,6 +92,90 @@ const DailyExpenses = () => {
     XLSX.writeFile(workbook, fileName);
 
     toast.success('✅ Export successful — file downloaded');
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFromExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        if (jsonData.length === 0) {
+          toast.error('No data found in the Excel file');
+          return;
+        }
+
+        let importedCount = 0;
+        let errorCount = 0;
+
+        jsonData.forEach((row: any) => {
+          try {
+            if (!row['Description'] || !row['Amount (₹)']) {
+              errorCount++;
+              return;
+            }
+
+            let expenseDate = new Date();
+            if (row['Date']) {
+              const parsedDate = new Date(row['Date']);
+              if (!isNaN(parsedDate.getTime())) {
+                expenseDate = parsedDate;
+              }
+            }
+
+            const category = row['Category'] || 'Other';
+            const paymentMode = row['Payment Mode'] || 'Cash';
+            const status = ['Paid', 'Pending'].includes(row['Status']) ? row['Status'] : 'Paid';
+
+            addExpense({
+              date: expenseDate,
+              category,
+              description: String(row['Description']),
+              paymentMode,
+              amount: Number(row['Amount (₹)']) || 0,
+              status,
+              attachment: row['Attachment'] || undefined,
+            });
+
+            importedCount++;
+          } catch (error) {
+            console.error('Error importing expense:', error);
+            errorCount++;
+          }
+        });
+
+        if (importedCount > 0) {
+          toast.success(`✅ Successfully imported ${importedCount} expense${importedCount > 1 ? 's' : ''}`);
+        }
+        if (errorCount > 0) {
+          toast.warning(`⚠️ ${errorCount} row${errorCount > 1 ? 's' : ''} skipped due to missing or invalid data`);
+        }
+      } catch (error) {
+        console.error('Error reading Excel file:', error);
+        toast.error('Failed to import Excel file. Please check the file format.');
+      }
+    };
+
+    reader.onerror = () => {
+      toast.error('Failed to read the file');
+    };
+
+    reader.readAsBinaryString(file);
+    
+    if (event.target) {
+      event.target.value = '';
+    }
   };
 
   const handleEdit = (expense: Expense) => {
@@ -174,9 +259,21 @@ const DailyExpenses = () => {
               <CardDescription>View and manage all your business expenses</CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleImportFromExcel}
+                className="hidden"
+              />
               <Button onClick={() => setIsModalOpen(true)} className="gap-2">
                 <Plus className="w-4 h-4" />
                 Add Expense
+              </Button>
+              <Button onClick={handleImportClick} variant="outline" className="gap-2">
+                <FileUp className="w-4 h-4" />
+                <span className="hidden sm:inline">Import from Excel</span>
+                <span className="sm:hidden">Import</span>
               </Button>
               <Button onClick={handleExport} variant="outline" className="gap-2">
                 <Download className="w-4 h-4" />

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Search, Filter, Download, Edit, Trash2, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Plus, Search, Filter, Download, FileUp, Edit, Trash2, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,8 +48,9 @@ const getStatusBadge = (status: InvoiceStatus) => {
 };
 
 const Invoices = () => {
-  const { invoices, deleteInvoice } = useApp();
+  const { invoices, deleteInvoice, addInvoice } = useApp();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
@@ -143,6 +144,122 @@ const Invoices = () => {
     });
   };
 
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFromExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        if (jsonData.length === 0) {
+          toast({ title: 'Error', description: 'No data found in the Excel file', variant: 'destructive' });
+          return;
+        }
+
+        // Group line items by invoice
+        const invoiceMap = new Map<string, any>();
+        
+        jsonData.forEach((row: any) => {
+          const invoiceNumber = row['Invoice No.'];
+          if (!invoiceNumber) return;
+
+          if (!invoiceMap.has(invoiceNumber)) {
+            invoiceMap.set(invoiceNumber, {
+              header: row,
+              lineItems: []
+            });
+          }
+
+          // Add line item if particulars exist
+          if (row['Particulars']) {
+            invoiceMap.get(invoiceNumber).lineItems.push(row);
+          }
+        });
+
+        let importedCount = 0;
+        let errorCount = 0;
+
+        invoiceMap.forEach((invoice) => {
+          try {
+            const header = invoice.header;
+            
+            // Validate required fields
+            if (!header['Vendor Name'] || !header['Invoice Date'] || invoice.lineItems.length === 0) {
+              errorCount++;
+              return;
+            }
+
+            const lineItems = invoice.lineItems.map((item: any, index: number) => ({
+              id: `item-${Date.now()}-${index}`,
+              particulars: String(item['Particulars']),
+              poQty: Number(item['PO Qty']) || 0,
+              qtyDispatched: Number(item['Qty Dispatched']) || 0,
+              balanceQty: Number(item['Balance Qty']) || 0,
+              basicAmount: Number(item['Basic Amount (₹)']) || 0,
+              gstPercent: Number(item['GST (%)']) || 18,
+              gstAmount: Number(item['GST Amount (₹)']) || 0,
+              transportationCost: Number(item['Transportation Cost (₹)']) || 0,
+              lineTotal: Number(item['Line Total (₹)']) || 0,
+            }));
+
+            const invoiceDate = new Date(header['Invoice Date']);
+            const poDate = header['PO Date'] ? new Date(header['PO Date']) : undefined;
+            const dueDate = header['Due Date'] ? new Date(header['Due Date']) : new Date(invoiceDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+            addInvoice({
+              vendorId: 'V1',
+              vendorName: String(header['Vendor Name']),
+              invoiceDate,
+              poNumber: header['PO Number'] || undefined,
+              poDate,
+              lineItems,
+              totalCost: Number(header['Total Cost (₹)']) || lineItems.reduce((sum: number, item: any) => sum + item.lineTotal, 0),
+              amountReceived: Number(header['Amount Received (₹)']) || 0,
+              pendingAmount: Number(header['Pending Amount (₹)']) || 0,
+              status: ['Paid', 'Partial', 'Unpaid', 'Overdue'].includes(header['Status']) ? header['Status'] : 'Unpaid',
+              dueDate,
+            });
+
+            importedCount++;
+          } catch (error) {
+            console.error('Error importing invoice:', error);
+            errorCount++;
+          }
+        });
+
+        if (importedCount > 0) {
+          toast({ title: 'Success', description: `Successfully imported ${importedCount} invoice${importedCount > 1 ? 's' : ''}` });
+        }
+        if (errorCount > 0) {
+          toast({ title: 'Warning', description: `${errorCount} row${errorCount > 1 ? 's' : ''} skipped due to missing or invalid data`, variant: 'destructive' });
+        }
+      } catch (error) {
+        console.error('Error reading Excel file:', error);
+        toast({ title: 'Error', description: 'Failed to import Excel file. Please check the file format.', variant: 'destructive' });
+      }
+    };
+
+    reader.onerror = () => {
+      toast({ title: 'Error', description: 'Failed to read the file', variant: 'destructive' });
+    };
+
+    reader.readAsBinaryString(file);
+    
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
   // Calculate summary stats
   const totalInvoices = invoices.length;
   const paidInvoices = invoices.filter(inv => inv.status === 'Paid').length;
@@ -214,6 +331,26 @@ const Invoices = () => {
               <CardDescription>Track, Create, and Manage Purchase Order-Linked Invoices</CardDescription>
             </div>
             <div className="flex gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleImportFromExcel}
+                className="hidden"
+              />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" className="gap-2" onClick={handleImportClick}>
+                      <FileUp className="w-4 h-4" />
+                      Import from Excel
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Import invoices from Excel file</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
