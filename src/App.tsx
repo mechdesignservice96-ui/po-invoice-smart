@@ -13,19 +13,19 @@ import Invoices from "./pages/Invoices";
 import Vendors from "./pages/Vendors";
 import DailyExpenses from "./pages/DailyExpenses";
 import Reports from "./pages/Reports";
-import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Loading...</div>
       </div>
     );
   }
@@ -35,9 +35,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   return <>{children}</>;
-}
+};
 
-function AppRoutes() {
+const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/auth" element={<Auth />} />
@@ -68,7 +68,7 @@ function AppRoutes() {
       />
     </Routes>
   );
-}
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
