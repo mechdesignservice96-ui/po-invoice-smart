@@ -14,42 +14,7 @@ export type Database = {
   }
   public: {
     Tables: {
-      profiles: {
-        Row: {
-          created_at: string
-          id: string
-          organization_address: string | null
-          organization_email: string | null
-          organization_gst_tin: string | null
-          organization_name: string | null
-          organization_phone: string | null
-          organization_website: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id: string
-          organization_address?: string | null
-          organization_email?: string | null
-          organization_gst_tin?: string | null
-          organization_name?: string | null
-          organization_phone?: string | null
-          organization_website?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          organization_address?: string | null
-          organization_email?: string | null
-          organization_gst_tin?: string | null
-          organization_name?: string | null
-          organization_phone?: string | null
-          organization_website?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
