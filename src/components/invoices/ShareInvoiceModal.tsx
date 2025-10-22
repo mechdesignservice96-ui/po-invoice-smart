@@ -33,59 +33,78 @@ export const ShareInvoiceModal = ({ open, onClose, invoice }: ShareInvoiceModalP
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      let yPos = 15;
+      let yPos = 20;
 
-      // Company Details (Top Left)
-      doc.setFillColor(41, 98, 255); // Professional blue header
-      doc.rect(0, 0, pageWidth, 35, 'F');
+      // Company Logo/Header Section with Border
+      doc.setDrawColor(41, 98, 255);
+      doc.setLineWidth(3);
+      doc.line(15, 15, pageWidth - 15, 15);
       
-      // Company Name in Header
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(18);
+      yPos = 22;
+      
+      // Company Name - Large and Bold
+      doc.setTextColor(41, 98, 255);
+      doc.setFontSize(22);
       doc.setFont('helvetica', 'bold');
-      doc.text('Tech Solutions Ltd', 15, 15);
+      doc.text('TECH SOLUTIONS LTD', 15, yPos);
+      yPos += 8;
       
-      // Company Details in Header
-      doc.setFontSize(8);
+      // Company Details
+      doc.setTextColor(80, 80, 80);
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
-      doc.text('123 Business Park, Electronic City, Bangalore - 560100', 15, 21);
-      doc.text('GST: 29ABCDE1234F1Z5 | Phone: +91 98765 43210', 15, 26);
-      doc.text('Email: info@techsolutions.com | Web: www.techsolutions.com', 15, 31);
-
+      doc.text('123 Business Park, Electronic City, Bangalore - 560100', 15, yPos);
+      yPos += 5;
+      doc.text('GST Number: 29ABCDE1234F1Z5', 15, yPos);
+      yPos += 5;
+      doc.text('Phone: +91 98765 43210 | Email: info@techsolutions.com', 15, yPos);
+      yPos += 5;
+      doc.text('Website: www.techsolutions.com', 15, yPos);
+      
+      // Separator line
+      yPos += 5;
+      doc.setDrawColor(220, 220, 220);
+      doc.setLineWidth(0.5);
+      doc.line(15, yPos, pageWidth - 15, yPos);
+      
       // Reset text color
       doc.setTextColor(0, 0, 0);
-      yPos = 45;
+      yPos = 60;
 
-      // Main Title
-      doc.setFontSize(24);
+
+      // Main Title - INVOICE
+      doc.setFontSize(28);
       doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
       doc.text('INVOICE', pageWidth / 2, yPos, { align: 'center' });
-      yPos += 15;
+      yPos += 12;
 
-      // Invoice Info Box (Top Right)
-      const infoBoxX = pageWidth - 75;
-      doc.setFillColor(245, 245, 245);
-      doc.rect(infoBoxX - 5, yPos - 10, 65, 28, 'F');
+      // Invoice Info Box (Top Right aligned with title)
+      const infoBoxX = pageWidth - 70;
+      const infoBoxY = yPos - 20;
       
+      doc.setFillColor(41, 98, 255);
+      doc.rect(infoBoxX - 3, infoBoxY, 58, 24, 'F');
+      
+      doc.setTextColor(255, 255, 255);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.text('Invoice No:', infoBoxX, yPos);
+      doc.text('Invoice No:', infoBoxX, infoBoxY + 6);
       doc.setFont('helvetica', 'normal');
-      doc.text(invoice.invoiceNumber, pageWidth - 15, yPos, { align: 'right' });
-      yPos += 7;
+      doc.text(invoice.invoiceNumber, pageWidth - 18, infoBoxY + 6, { align: 'right' });
       
       doc.setFont('helvetica', 'bold');
-      doc.text('Date:', infoBoxX, yPos);
+      doc.text('Date:', infoBoxX, infoBoxY + 12);
       doc.setFont('helvetica', 'normal');
-      doc.text(formatDate(invoice.invoiceDate), pageWidth - 15, yPos, { align: 'right' });
-      yPos += 7;
+      doc.text(formatDate(invoice.invoiceDate), pageWidth - 18, infoBoxY + 12, { align: 'right' });
       
       doc.setFont('helvetica', 'bold');
-      doc.text('Due Date:', infoBoxX, yPos);
+      doc.text('Due Date:', infoBoxX, infoBoxY + 18);
       doc.setFont('helvetica', 'normal');
-      doc.text(formatDate(invoice.dueDate), pageWidth - 15, yPos, { align: 'right' });
+      doc.text(formatDate(invoice.dueDate), pageWidth - 18, infoBoxY + 18, { align: 'right' });
       
-      yPos += 12;
+      doc.setTextColor(0, 0, 0);
+      yPos += 5;
 
       // Bill From Section
       doc.setFillColor(250, 250, 250);
