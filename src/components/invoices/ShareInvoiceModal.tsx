@@ -32,120 +32,254 @@ export const ShareInvoiceModal = ({ open, onClose, invoice }: ShareInvoiceModalP
     try {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
-      let yPos = 20;
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let yPos = 15;
 
-      // Header
-      doc.setFontSize(20);
+      // Company Details (Top Left)
+      doc.setFillColor(41, 98, 255); // Professional blue header
+      doc.rect(0, 0, pageWidth, 35, 'F');
+      
+      // Company Name in Header
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Tech Solutions Ltd', 15, 15);
+      
+      // Company Details in Header
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text('123 Business Park, Electronic City, Bangalore - 560100', 15, 21);
+      doc.text('GST: 29ABCDE1234F1Z5 | Phone: +91 98765 43210', 15, 26);
+      doc.text('Email: info@techsolutions.com | Web: www.techsolutions.com', 15, 31);
+
+      // Reset text color
+      doc.setTextColor(0, 0, 0);
+      yPos = 45;
+
+      // Main Title
+      doc.setFontSize(24);
       doc.setFont('helvetica', 'bold');
       doc.text('INVOICE', pageWidth / 2, yPos, { align: 'center' });
       yPos += 15;
 
-      // Invoice Details
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Invoice No: ${invoice.invoiceNumber}`, 20, yPos);
-      doc.text(`Date: ${formatDate(invoice.invoiceDate)}`, pageWidth - 70, yPos);
-      yPos += 7;
-      doc.text(`Due Date: ${formatDate(invoice.dueDate)}`, pageWidth - 70, yPos);
-      yPos += 10;
-
-      // Vendor Details
+      // Invoice Info Box (Top Right)
+      const infoBoxX = pageWidth - 75;
+      doc.setFillColor(245, 245, 245);
+      doc.rect(infoBoxX - 5, yPos - 10, 65, 28, 'F');
+      
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.text('Bill From:', 20, yPos);
-      yPos += 5;
+      doc.text('Invoice No:', infoBoxX, yPos);
       doc.setFont('helvetica', 'normal');
-      doc.text(invoice.vendorName, 20, yPos);
+      doc.text(invoice.invoiceNumber, pageWidth - 15, yPos, { align: 'right' });
+      yPos += 7;
+      
+      doc.setFont('helvetica', 'bold');
+      doc.text('Date:', infoBoxX, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(formatDate(invoice.invoiceDate), pageWidth - 15, yPos, { align: 'right' });
+      yPos += 7;
+      
+      doc.setFont('helvetica', 'bold');
+      doc.text('Due Date:', infoBoxX, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(formatDate(invoice.dueDate), pageWidth - 15, yPos, { align: 'right' });
+      
+      yPos += 12;
+
+      // Bill From Section
+      doc.setFillColor(250, 250, 250);
+      doc.rect(15, yPos, 85, 25, 'F');
+      doc.setDrawColor(220, 220, 220);
+      doc.rect(15, yPos, 85, 25, 'S');
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.text('Bill From:', 18, yPos + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text(invoice.vendorName, 18, yPos + 12);
+      
+      // Delivery Address Section
+      doc.setFillColor(250, 250, 250);
+      doc.rect(105, yPos, 90, 25, 'F');
+      doc.setDrawColor(220, 220, 220);
+      doc.rect(105, yPos, 90, 25, 'S');
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.text('Delivery Address:', 108, yPos + 6);
+      yPos += 12;
+      
+      if (deliveryAddress.trim()) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        const addressLines = doc.splitTextToSize(deliveryAddress, 82);
+        addressLines.slice(0, 2).forEach((line: string) => {
+          doc.text(line, 108, yPos);
+          yPos += 4;
+        });
+      }
+      
       yPos += 15;
 
-      // Delivery Address
-      if (deliveryAddress.trim()) {
-        doc.setFont('helvetica', 'bold');
-        doc.text('Delivery Address:', 20, yPos);
-        yPos += 5;
-        doc.setFont('helvetica', 'normal');
-        const addressLines = doc.splitTextToSize(deliveryAddress, 80);
-        addressLines.forEach((line: string) => {
-          doc.text(line, 20, yPos);
-          yPos += 5;
-        });
-        yPos += 5;
-      }
-
-      // PO Details
+      // PO Details Section
       if (invoice.poNumber) {
-        doc.text(`PO Number: ${invoice.poNumber}`, 20, yPos);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text('PO Number:', 15, yPos);
+        doc.setFont('helvetica', 'normal');
+        doc.text(invoice.poNumber, 45, yPos);
+        
         if (invoice.poDate) {
-          doc.text(`PO Date: ${formatDate(invoice.poDate)}`, 80, yPos);
+          doc.setFont('helvetica', 'bold');
+          doc.text('PO Date:', 100, yPos);
+          doc.setFont('helvetica', 'normal');
+          doc.text(formatDate(invoice.poDate), 125, yPos);
         }
         yPos += 10;
       }
 
-      // Line Items Table Header
+      // Line Items Table
+      yPos += 5;
+      const tableStartY = yPos;
+      
+      // Table Header
+      doc.setFillColor(41, 98, 255);
+      doc.rect(15, yPos, pageWidth - 30, 8, 'F');
+      
+      doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
-      doc.setFillColor(240, 240, 240);
-      doc.rect(15, yPos - 5, pageWidth - 30, 8, 'F');
-      doc.text('Item', 20, yPos);
-      doc.text('Qty', 90, yPos);
-      doc.text('Rate', 110, yPos);
-      doc.text('GST%', 135, yPos);
-      doc.text('Amount', pageWidth - 25, yPos, { align: 'right' });
-      yPos += 10;
+      doc.setFontSize(9);
+      doc.text('Item', 18, yPos + 5);
+      doc.text('Qty', 95, yPos + 5, { align: 'center' });
+      doc.text('Rate', 115, yPos + 5, { align: 'right' });
+      doc.text('GST%', 140, yPos + 5, { align: 'center' });
+      doc.text('Amount', pageWidth - 18, yPos + 5, { align: 'right' });
+      
+      yPos += 8;
+      doc.setTextColor(0, 0, 0);
+
+      // Table Border
+      doc.setDrawColor(220, 220, 220);
+      doc.rect(15, tableStartY, pageWidth - 30, 8, 'S');
 
       // Line Items
       doc.setFont('helvetica', 'normal');
-      (invoice.lineItems || []).forEach((item, index) => {
+      doc.setFontSize(9);
+      let itemNumber = 1;
+      
+      (invoice.lineItems || []).forEach((item) => {
         // Check if we need a new page
-        if (yPos > 250) {
+        if (yPos > pageHeight - 60) {
           doc.addPage();
           yPos = 20;
         }
 
-        const itemText = doc.splitTextToSize(item.particulars, 65);
-        doc.text(itemText[0], 20, yPos);
-        doc.text(item.qtyDispatched.toString(), 90, yPos);
-        doc.text(formatCurrency(item.basicAmount), 110, yPos);
-        doc.text(`${invoice.gstPercent}%`, 135, yPos);
-        doc.text(formatCurrency(item.lineTotal), pageWidth - 25, yPos, { align: 'right' });
-        yPos += 8;
-
-        // Additional lines for long item names
-        if (itemText.length > 1) {
-          for (let i = 1; i < itemText.length; i++) {
-            doc.text(itemText[i], 20, yPos);
-            yPos += 5;
-          }
-          yPos += 3;
+        // Alternating row colors
+        if (itemNumber % 2 === 0) {
+          doc.setFillColor(250, 250, 250);
+          doc.rect(15, yPos - 3, pageWidth - 30, 10, 'F');
         }
+
+        const itemText = doc.splitTextToSize(item.particulars, 70);
+        doc.text(itemText[0], 18, yPos + 3);
+        doc.text(item.qtyDispatched.toString(), 95, yPos + 3, { align: 'center' });
+        doc.text(formatCurrency(item.basicAmount / item.qtyDispatched), 115, yPos + 3, { align: 'right' });
+        doc.text(`${invoice.gstPercent}%`, 140, yPos + 3, { align: 'center' });
+        doc.text(formatCurrency(item.lineTotal), pageWidth - 18, yPos + 3, { align: 'right' });
+        
+        // Draw row border
+        doc.setDrawColor(230, 230, 230);
+        doc.line(15, yPos + 7, pageWidth - 15, yPos + 7);
+        
+        yPos += 10;
+        itemNumber++;
       });
 
-      yPos += 5;
+      yPos += 3;
 
-      // Totals
-      doc.setDrawColor(200, 200, 200);
-      doc.line(15, yPos, pageWidth - 15, yPos);
+      // Calculate totals
+      const subtotal = (invoice.lineItems || []).reduce((sum, item) => sum + item.basicAmount, 0);
+      const totalGST = (invoice.lineItems || []).reduce((sum, item) => sum + item.gstAmount, 0);
+
+      // Totals Section
+      const totalsX = pageWidth - 85;
+      
+      // Subtotal
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text('Subtotal:', totalsX, yPos);
+      doc.text(formatCurrency(subtotal), pageWidth - 18, yPos, { align: 'right' });
+      yPos += 6;
+
+      // GST
+      doc.text(`GST (${invoice.gstPercent}%):`, totalsX, yPos);
+      doc.text(formatCurrency(totalGST), pageWidth - 18, yPos, { align: 'right' });
+      yPos += 6;
+
+      // Transportation
+      if (invoice.transportationCost > 0) {
+        doc.text('Transportation:', totalsX, yPos);
+        doc.text(formatCurrency(invoice.transportationCost), pageWidth - 18, yPos, { align: 'right' });
+        yPos += 6;
+      }
+
+      // Total Amount - Highlighted
+      doc.setDrawColor(41, 98, 255);
+      doc.setLineWidth(0.5);
+      doc.line(totalsX - 5, yPos - 2, pageWidth - 15, yPos - 2);
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text('Total Amount:', totalsX, yPos + 3);
+      doc.text(formatCurrency(invoice.totalCost), pageWidth - 18, yPos + 3, { align: 'right' });
       yPos += 8;
 
-      doc.setFont('helvetica', 'bold');
-      doc.text('Total Amount:', pageWidth - 80, yPos);
-      doc.text(formatCurrency(invoice.totalCost), pageWidth - 25, yPos, { align: 'right' });
-      yPos += 7;
-
+      // Amount Received
       doc.setFont('helvetica', 'normal');
-      doc.text('Amount Received:', pageWidth - 80, yPos);
-      doc.text(formatCurrency(invoice.amountReceived), pageWidth - 25, yPos, { align: 'right' });
-      yPos += 7;
-
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(220, 38, 38);
-      doc.text('Amount Due:', pageWidth - 80, yPos);
-      doc.text(formatCurrency(invoice.pendingAmount), pageWidth - 25, yPos, { align: 'right' });
+      doc.setFontSize(9);
+      doc.text('Amount Received:', totalsX, yPos);
+      doc.setTextColor(0, 150, 0);
+      doc.text(formatCurrency(invoice.amountReceived), pageWidth - 18, yPos, { align: 'right' });
       doc.setTextColor(0, 0, 0);
+      yPos += 6;
+
+      // Amount Due - Highlighted in red
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(220, 38, 38);
+      doc.text('Amount Due:', totalsX, yPos);
+      doc.text(formatCurrency(invoice.pendingAmount), pageWidth - 18, yPos, { align: 'right' });
+      doc.setTextColor(0, 0, 0);
+      
       yPos += 15;
 
+      // Terms & Conditions / Notes Section
+      if (yPos < pageHeight - 35) {
+        doc.setFillColor(250, 250, 250);
+        doc.rect(15, yPos, pageWidth - 30, 15, 'F');
+        doc.setDrawColor(220, 220, 220);
+        doc.rect(15, yPos, pageWidth - 30, 15, 'S');
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.text('Terms & Conditions:', 18, yPos + 5);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.text('Payment is due within the specified due date. Late payments may incur additional charges.', 18, yPos + 10);
+      }
+
       // Footer
+      doc.setFillColor(41, 98, 255);
+      doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
+      
+      doc.setTextColor(255, 255, 255);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'italic');
-      doc.text('Thank you for your business!', pageWidth / 2, yPos, { align: 'center' });
+      doc.text('Thank you for your business!', pageWidth / 2, pageHeight - 8, { align: 'center' });
+      doc.setFontSize(7);
+      doc.text('This is a computer-generated invoice and does not require a signature.', pageWidth / 2, pageHeight - 4, { align: 'center' });
 
       return doc.output('blob');
     } catch (error) {
