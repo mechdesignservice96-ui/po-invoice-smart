@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { InvoiceStatus } from '@/types';
+import { ChartContainer, ChartTooltipContent, ChartTooltip } from '@/components/ui/chart';
 
 const getStatusBadge = (status: InvoiceStatus) => {
   const variants: Record<InvoiceStatus, { variant: 'default' | 'success' | 'warning' | 'destructive'; label: string }> = {
@@ -19,7 +20,7 @@ const getStatusBadge = (status: InvoiceStatus) => {
 };
 
 const Dashboard = () => {
-  const { dashboardStats, invoices, saleOrders } = useApp();
+  const { dashboardStats, invoices, saleOrders, expenses } = useApp();
 
   // Get recent overdue invoices
   const overdueInvoices = invoices
@@ -45,6 +46,47 @@ const Dashboard = () => {
         'Paid Amount': paidAmount,
       };
     });
+  };
+
+  // Daily transactions data - last 14 days
+  const getDailyTransactionData = () => {
+    const days = 14;
+    const data = [];
+    const today = new Date();
+    
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      
+      const dateStr = date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+      
+      // Calculate expenses for this day
+      const dailyExpenses = expenses
+        .filter(exp => {
+          const expDate = new Date(exp.date);
+          expDate.setHours(0, 0, 0, 0);
+          return expDate.getTime() === date.getTime();
+        })
+        .reduce((sum, exp) => sum + exp.amount, 0);
+      
+      // Calculate payments received for this day
+      const dailyPayments = invoices
+        .filter(inv => {
+          const invDate = new Date(inv.invoiceDate);
+          invDate.setHours(0, 0, 0, 0);
+          return invDate.getTime() === date.getTime() && inv.amountReceived > 0;
+        })
+        .reduce((sum, inv) => sum + inv.amountReceived, 0);
+      
+      data.push({
+        date: dateStr,
+        Expenses: dailyExpenses,
+        Payments: dailyPayments,
+      });
+    }
+    
+    return data;
   };
 
   return (
@@ -92,6 +134,47 @@ const Dashboard = () => {
           </CardHeader>
         </Card>
       )}
+
+      {/* Daily Transaction Chart */}
+      <Card className="animate-scale-in">
+        <CardHeader>
+          <CardTitle>Daily Transactions (Last 14 Days)</CardTitle>
+          <CardDescription>Track daily expenses and payments received</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ChartContainer
+            config={{
+              Expenses: {
+                label: 'Expenses',
+                color: 'hsl(var(--destructive))',
+              },
+              Payments: {
+                label: 'Payments',
+                color: 'hsl(var(--success))',
+              },
+            }}
+            className="h-[300px]"
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={getDailyTransactionData()}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis 
+                  dataKey="date" 
+                  className="text-xs"
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis className="text-xs" />
+                <ChartTooltip content={<ChartTooltipContent formatter={(value: number) => formatCurrency(value)} />} />
+                <Legend />
+                <Bar dataKey="Expenses" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Payments" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Chart */}
