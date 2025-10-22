@@ -213,15 +213,15 @@ const Invoices = () => {
         'Vendor Name': 'Sample Vendor Ltd',
         'PO Number': 'PO-2025-001',
         'PO Date': '2025-01-20',
+        'GST (%)': 18,
+        'Transportation Cost (₹)': 1000,
         'Particulars': 'Sample Item 1 - Product Description',
         'PO Qty': 100,
         'Qty Dispatched': 100,
         'Balance Qty': 0,
         'Basic Amount (₹)': 50000,
-        'GST (%)': 18,
         'GST Amount (₹)': 9000,
-        'Transportation Cost (₹)': 1000,
-        'Line Total (₹)': 60000,
+        'Line Total (₹)': 59000,
         'Total Cost (₹)': 120000,
         'Amount Received (₹)': 60000,
         'Pending Amount (₹)': 60000,
@@ -235,15 +235,15 @@ const Invoices = () => {
         'Vendor Name': '',
         'PO Number': '',
         'PO Date': '',
+        'GST (%)': '',
+        'Transportation Cost (₹)': '',
         'Particulars': 'Sample Item 2 - Another Product',
         'PO Qty': 50,
         'Qty Dispatched': 50,
         'Balance Qty': 0,
         'Basic Amount (₹)': 50000,
-        'GST (%)': 18,
         'GST Amount (₹)': 9000,
-        'Transportation Cost (₹)': 1000,
-        'Line Total (₹)': 60000,
+        'Line Total (₹)': 59000,
         'Total Cost (₹)': '',
         'Amount Received (₹)': '',
         'Pending Amount (₹)': '',
@@ -282,14 +282,14 @@ const Invoices = () => {
         'Vendor Name': itemIndex === 0 ? inv.vendorName : '',
         'PO Number': itemIndex === 0 ? (inv.poNumber || '') : '',
         'PO Date': itemIndex === 0 ? (inv.poDate ? formatDate(inv.poDate) : '') : '',
+        'GST (%)': itemIndex === 0 ? inv.gstPercent : '',
+        'Transportation Cost (₹)': itemIndex === 0 ? inv.transportationCost : '',
         'Particulars': item.particulars,
         'PO Qty': item.poQty,
         'Qty Dispatched': item.qtyDispatched,
         'Balance Qty': item.balanceQty,
         'Basic Amount (₹)': item.basicAmount,
-        'GST (%)': item.gstPercent,
         'GST Amount (₹)': item.gstAmount,
-        'Transportation Cost (₹)': item.transportationCost,
         'Line Total (₹)': item.lineTotal,
         'Total Cost (₹)': itemIndex === 0 ? inv.totalCost : '',
         'Amount Received (₹)': itemIndex === 0 ? inv.amountReceived : '',
@@ -379,18 +379,28 @@ const Invoices = () => {
               return;
             }
 
-            const lineItems = invoice.lineItems.map((item: any, index: number) => ({
-              id: `item-${Date.now()}-${index}`,
-              particulars: String(item['Particulars']),
-              poQty: Number(item['PO Qty']) || 0,
-              qtyDispatched: Number(item['Qty Dispatched']) || 0,
-              balanceQty: Number(item['Balance Qty']) || 0,
-              basicAmount: Number(item['Basic Amount (₹)']) || 0,
-              gstPercent: Number(item['GST (%)']) || 18,
-              gstAmount: Number(item['GST Amount (₹)']) || 0,
-              transportationCost: Number(item['Transportation Cost (₹)']) || 0,
-              lineTotal: Number(item['Line Total (₹)']) || 0,
-            }));
+            const gstPercent = Number(header['GST (%)']) || 18;
+            const transportationCost = Number(header['Transportation Cost (₹)']) || 0;
+
+            const lineItems = invoice.lineItems.map((item: any, index: number) => {
+              const basicAmount = Number(item['Basic Amount (₹)']) || 0;
+              const gstAmount = (basicAmount * gstPercent) / 100;
+              const lineTotal = basicAmount + gstAmount;
+              
+              return {
+                id: `item-${Date.now()}-${index}`,
+                particulars: String(item['Particulars']),
+                poQty: Number(item['PO Qty']) || 0,
+                qtyDispatched: Number(item['Qty Dispatched']) || 0,
+                balanceQty: Number(item['Balance Qty']) || 0,
+                basicAmount,
+                gstAmount,
+                lineTotal,
+              };
+            });
+
+            const subtotal = lineItems.reduce((sum: number, item: any) => sum + item.lineTotal, 0);
+            const totalCost = subtotal + transportationCost;
 
             const invoiceDate = new Date(header['Invoice Date']);
             const poDate = header['PO Date'] ? new Date(header['PO Date']) : undefined;
@@ -403,7 +413,9 @@ const Invoices = () => {
               poNumber: header['PO Number'] || undefined,
               poDate,
               lineItems,
-              totalCost: Number(header['Total Cost (₹)']) || lineItems.reduce((sum: number, item: any) => sum + item.lineTotal, 0),
+              gstPercent,
+              transportationCost,
+              totalCost: Number(header['Total Cost (₹)']) || totalCost,
               amountReceived: Number(header['Amount Received (₹)']) || 0,
               pendingAmount: Number(header['Pending Amount (₹)']) || 0,
               status: ['Paid', 'Partial', 'Unpaid', 'Overdue'].includes(header['Status']) ? header['Status'] : 'Unpaid',
@@ -776,7 +788,19 @@ const Invoices = () => {
                         <TableRow className="bg-muted/20">
                           <TableCell colSpan={14} className="p-0">
                             <div className="px-6 py-4">
-                              <h4 className="text-sm font-semibold mb-3">Line Items Details</h4>
+                              <div className="flex justify-between items-center mb-3">
+                                <h4 className="text-sm font-semibold">Line Items Details</h4>
+                                <div className="flex gap-6 text-sm">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground">Invoice GST:</span>
+                                    <span className="font-semibold">{inv.gstPercent}%</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground">Transportation:</span>
+                                    <span className="font-semibold">{formatCurrency(inv.transportationCost)}</span>
+                                  </div>
+                                </div>
+                              </div>
                               <div className="border rounded-lg overflow-hidden">
                                 <Table>
                                   <TableHeader>
@@ -787,9 +811,7 @@ const Invoices = () => {
                                       <TableHead className="font-semibold text-right">Dispatched</TableHead>
                                       <TableHead className="font-semibold text-right">Balance</TableHead>
                                       <TableHead className="font-semibold text-right">Basic (₹)</TableHead>
-                                      <TableHead className="font-semibold text-right">GST %</TableHead>
                                       <TableHead className="font-semibold text-right">GST (₹)</TableHead>
-                                      <TableHead className="font-semibold text-right">Transport (₹)</TableHead>
                                       <TableHead className="font-semibold text-right">Total (₹)</TableHead>
                                     </TableRow>
                                   </TableHeader>
@@ -804,9 +826,7 @@ const Invoices = () => {
                                           {item.balanceQty}
                                         </TableCell>
                                         <TableCell className="text-right">{formatCurrency(item.basicAmount)}</TableCell>
-                                        <TableCell className="text-right">{item.gstPercent}%</TableCell>
                                         <TableCell className="text-right">{formatCurrency(item.gstAmount)}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(item.transportationCost)}</TableCell>
                                         <TableCell className="text-right font-semibold text-primary">
                                           {formatCurrency(item.lineTotal)}
                                         </TableCell>

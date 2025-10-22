@@ -104,7 +104,7 @@ export const ShareInvoiceModal = ({ open, onClose, invoice }: ShareInvoiceModalP
         doc.text(itemText[0], 20, yPos);
         doc.text(item.qtyDispatched.toString(), 90, yPos);
         doc.text(formatCurrency(item.basicAmount), 110, yPos);
-        doc.text(`${item.gstPercent}%`, 135, yPos);
+        doc.text(`${invoice.gstPercent}%`, 135, yPos);
         doc.text(formatCurrency(item.lineTotal), pageWidth - 25, yPos, { align: 'right' });
         yPos += 8;
 

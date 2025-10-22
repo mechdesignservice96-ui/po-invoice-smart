@@ -68,10 +68,8 @@ export interface InvoiceLineItem {
   qtyDispatched: number;
   balanceQty: number; // auto: poQty - qtyDispatched
   basicAmount: number;
-  gstPercent: number;
-  gstAmount: number; // auto: basicAmount * gstPercent / 100
-  transportationCost: number;
-  lineTotal: number; // auto: basicAmount + gstAmount + transportationCost
+  gstAmount: number; // auto: calculated at invoice level based on invoice.gstPercent
+  lineTotal: number; // auto: basicAmount + gstAmount
 }
 
 export interface Invoice {
@@ -83,7 +81,9 @@ export interface Invoice {
   poNumber?: string;
   poDate?: Date;
   lineItems: InvoiceLineItem[]; // Multiple line items
-  totalCost: number; // auto: sum of all lineItems.lineTotal
+  gstPercent: number; // GST % applied to all line items
+  transportationCost: number; // Transportation cost for the entire invoice
+  totalCost: number; // auto: sum of all lineItems.lineTotal + transportationCost
   amountReceived: number;
   pendingAmount: number; // auto: totalCost - amountReceived
   status: InvoiceStatus;

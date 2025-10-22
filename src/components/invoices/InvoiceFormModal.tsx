@@ -21,6 +21,8 @@ const invoiceHeaderSchema = z.object({
   vendorId: z.string().min(1, 'Vendor is required'),
   poNumber: z.string().optional(),
   poDate: z.string().optional(),
+  gstPercent: z.number().min(0).max(100),
+  transportationCost: z.number().min(0),
   amountReceived: z.number().min(0),
   dueDate: z.string().min(1, 'Due date is required'),
 });
@@ -53,6 +55,8 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
       vendorId: '',
       poNumber: '',
       poDate: '',
+      gstPercent: 18,
+      transportationCost: 0,
       amountReceived: 0,
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     },
@@ -68,6 +72,8 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
       setValue('vendorId', invoice.vendorId);
       setValue('poNumber', invoice.poNumber || '');
       setValue('poDate', invoice.poDate ? new Date(invoice.poDate).toISOString().split('T')[0] : '');
+      setValue('gstPercent', invoice.gstPercent || 18);
+      setValue('transportationCost', invoice.transportationCost || 0);
       setValue('amountReceived', invoice.amountReceived);
       setValue('dueDate', new Date(invoice.dueDate).toISOString().split('T')[0]);
       setSelectedVendorId(invoice.vendorId);
@@ -87,9 +93,7 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
     qtyDispatched: 0,
     balanceQty: 0,
     basicAmount: 0,
-    gstPercent: 18,
     gstAmount: 0,
-    transportationCost: 0,
     lineTotal: 0,
   });
 
@@ -113,15 +117,18 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
 
     // Calculate derived values
     item.balanceQty = item.poQty - item.qtyDispatched;
-    item.gstAmount = (item.basicAmount * item.gstPercent) / 100;
-    item.lineTotal = item.basicAmount + item.gstAmount + item.transportationCost;
+    const gstPercent = watchedFields.gstPercent || 18;
+    item.gstAmount = (item.basicAmount * gstPercent) / 100;
+    item.lineTotal = item.basicAmount + item.gstAmount;
 
     updatedItems[index] = item;
     setLineItems(updatedItems);
   };
 
   const calculateTotals = () => {
-    const totalCost = lineItems.reduce((sum, item) => sum + item.lineTotal, 0);
+    const subtotal = lineItems.reduce((sum, item) => sum + item.lineTotal, 0);
+    const transportationCost = watchedFields.transportationCost || 0;
+    const totalCost = subtotal + transportationCost;
     const pendingAmount = totalCost - (watchedFields.amountReceived || 0);
     return { totalCost, pendingAmount };
   };
@@ -150,6 +157,8 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
       poNumber: data.poNumber,
       poDate: data.poDate ? new Date(data.poDate) : undefined,
       lineItems: lineItems,
+      gstPercent: data.gstPercent,
+      transportationCost: data.transportationCost,
       totalCost: totals.totalCost,
       amountReceived: data.amountReceived,
       pendingAmount: totals.pendingAmount,
@@ -289,6 +298,57 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
                   />
                 </div>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+                {/* GST % */}
+                <div className="space-y-2">
+                  <Label htmlFor="gstPercent">GST % (Applied to all items) *</Label>
+                  <Select
+                    value={String(watchedFields.gstPercent || 18)}
+                    onValueChange={(value) => {
+                      setValue('gstPercent', Number(value));
+                      // Recalculate all line items with new GST%
+                      const updatedItems = lineItems.map(item => {
+                        const gstAmount = (item.basicAmount * Number(value)) / 100;
+                        return {
+                          ...item,
+                          gstAmount,
+                          lineTotal: item.basicAmount + gstAmount,
+                        };
+                      });
+                      setLineItems(updatedItems);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background z-50">
+                      <SelectItem value="0">0%</SelectItem>
+                      <SelectItem value="5">5%</SelectItem>
+                      <SelectItem value="12">12%</SelectItem>
+                      <SelectItem value="18">18%</SelectItem>
+                      <SelectItem value="28">28%</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.gstPercent && (
+                    <p className="text-sm text-destructive">{errors.gstPercent.message}</p>
+                  )}
+                </div>
+
+                {/* Transportation Cost */}
+                <div className="space-y-2">
+                  <Label htmlFor="transportationCost">Transportation Cost (₹) *</Label>
+                  <Input
+                    id="transportationCost"
+                    type="number"
+                    {...register('transportationCost', { valueAsNumber: true })}
+                    placeholder="0"
+                  />
+                  {errors.transportationCost && (
+                    <p className="text-sm text-destructive">{errors.transportationCost.message}</p>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -331,7 +391,7 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       {/* PO Qty */}
                       <div className="space-y-2">
                         <Label>PO Qty</Label>
@@ -375,26 +435,6 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
                         />
                       </div>
 
-                      {/* GST % */}
-                      <div className="space-y-2">
-                        <Label>GST %</Label>
-                        <Select
-                          value={String(item.gstPercent)}
-                          onValueChange={(value) => updateLineItem(index, 'gstPercent', Number(value))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-background z-50">
-                            <SelectItem value="0">0%</SelectItem>
-                            <SelectItem value="5">5%</SelectItem>
-                            <SelectItem value="12">12%</SelectItem>
-                            <SelectItem value="18">18%</SelectItem>
-                            <SelectItem value="28">28%</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
                       {/* GST Amount */}
                       <div className="space-y-2">
                         <Label>GST (₹)</Label>
@@ -402,17 +442,6 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
                           value={item.gstAmount.toFixed(2)}
                           readOnly
                           className="bg-muted"
-                        />
-                      </div>
-
-                      {/* Transportation Cost */}
-                      <div className="space-y-2">
-                        <Label>Transport (₹)</Label>
-                        <Input
-                          type="number"
-                          value={item.transportationCost}
-                          onChange={(e) => updateLineItem(index, 'transportationCost', Number(e.target.value))}
-                          placeholder="0"
                         />
                       </div>
 

@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,8 +19,9 @@ const profileSchema = z.object({
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
+const PROFILE_STORAGE_KEY = 'finance_organization_profile';
+
 const Profile = () => {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -37,46 +36,34 @@ const Profile = () => {
 
   useEffect(() => {
     loadProfile();
-  }, [user]);
+  }, []);
 
-  const loadProfile = async () => {
-    if (!user) return;
-
+  const loadProfile = () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
-      toast.error('Failed to load profile');
-    } else if (data) {
-      setValue('organization_name', data.organization_name || '');
-      setValue('organization_email', data.organization_email || '');
-      setValue('organization_phone', data.organization_phone || '');
-      setValue('organization_address', data.organization_address || '');
-      setValue('organization_gst_tin', data.organization_gst_tin || '');
-      setValue('organization_website', data.organization_website || '');
+    const stored = localStorage.getItem(PROFILE_STORAGE_KEY);
+    if (stored) {
+      try {
+        const data = JSON.parse(stored);
+        setValue('organization_name', data.organization_name || '');
+        setValue('organization_email', data.organization_email || '');
+        setValue('organization_phone', data.organization_phone || '');
+        setValue('organization_address', data.organization_address || '');
+        setValue('organization_gst_tin', data.organization_gst_tin || '');
+        setValue('organization_website', data.organization_website || '');
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+      }
     }
     setLoading(false);
   };
 
-  const onSubmit = async (data: ProfileFormData) => {
-    if (!user) return;
-
+  const onSubmit = (data: ProfileFormData) => {
     setSaving(true);
-    const { error } = await supabase
-      .from('profiles')
-      .upsert({
-        id: user.id,
-        ...data,
-      });
-
-    if (error) {
-      toast.error('Failed to save profile');
-    } else {
+    try {
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(data));
       toast.success('Profile saved successfully!');
+    } catch (error) {
+      toast.error('Failed to save profile');
     }
     setSaving(false);
   };
