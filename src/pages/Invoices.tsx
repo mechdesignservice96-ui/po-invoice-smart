@@ -788,19 +788,29 @@ const Invoices = () => {
                         <TableRow className="bg-muted/20">
                           <TableCell colSpan={14} className="p-0">
                             <div className="px-6 py-4">
-                              <div className="flex justify-between items-center mb-3">
-                                <h4 className="text-sm font-semibold">Line Items Details</h4>
-                                <div className="flex gap-6 text-sm">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-muted-foreground">Invoice GST:</span>
-                                    <span className="font-semibold">{inv.gstPercent}%</span>
+                              <div className="mb-4 p-4 bg-background rounded-lg border">
+                                <h4 className="text-sm font-semibold mb-3">Invoice Summary</h4>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                  <div>
+                                    <span className="text-muted-foreground">GST Rate:</span>
+                                    <div className="font-semibold text-lg">{inv.gstPercent}%</div>
                                   </div>
-                                  <div className="flex items-center gap-2">
+                                  <div>
+                                    <span className="text-muted-foreground">Total GST:</span>
+                                    <div className="font-semibold text-lg">{formatCurrency(inv.lineItems.reduce((sum, item) => sum + item.gstAmount, 0))}</div>
+                                  </div>
+                                  <div>
                                     <span className="text-muted-foreground">Transportation:</span>
-                                    <span className="font-semibold">{formatCurrency(inv.transportationCost)}</span>
+                                    <div className="font-semibold text-lg">{formatCurrency(inv.transportationCost)}</div>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Invoice Total:</span>
+                                    <div className="font-semibold text-lg text-primary">{formatCurrency(inv.totalCost)}</div>
                                   </div>
                                 </div>
                               </div>
+                              
+                              <h4 className="text-sm font-semibold mb-3">Line Items Details</h4>
                               <div className="border rounded-lg overflow-hidden">
                                 <Table>
                                   <TableHeader>
@@ -811,8 +821,6 @@ const Invoices = () => {
                                       <TableHead className="font-semibold text-right">Dispatched</TableHead>
                                       <TableHead className="font-semibold text-right">Balance</TableHead>
                                       <TableHead className="font-semibold text-right">Basic (₹)</TableHead>
-                                      <TableHead className="font-semibold text-right">GST (₹)</TableHead>
-                                      <TableHead className="font-semibold text-right">Total (₹)</TableHead>
                                     </TableRow>
                                   </TableHeader>
                                   <TableBody>
@@ -826,10 +834,6 @@ const Invoices = () => {
                                           {item.balanceQty}
                                         </TableCell>
                                         <TableCell className="text-right">{formatCurrency(item.basicAmount)}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(item.gstAmount)}</TableCell>
-                                        <TableCell className="text-right font-semibold text-primary">
-                                          {formatCurrency(item.lineTotal)}
-                                        </TableCell>
                                       </TableRow>
                                     ))}
                                   </TableBody>
