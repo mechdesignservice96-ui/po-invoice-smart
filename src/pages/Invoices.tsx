@@ -37,6 +37,18 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const getStatusBadge = (status: InvoiceStatus) => {
   const variants: Record<InvoiceStatus, { variant: 'default' | 'success' | 'warning' | 'destructive'; label: string }> = {
@@ -63,6 +75,9 @@ const Invoices = () => {
   const [vendorFilter, setVendorFilter] = useState<string | null>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [invoiceToShare, setInvoiceToShare] = useState<any>(null);
+  const [filterColumn, setFilterColumn] = useState<string>('');
+  const [filterValue, setFilterValue] = useState<string>('');
+  const [filterOpen, setFilterOpen] = useState(false);
 
   // Read vendor filter from URL params
   useEffect(() => {
@@ -95,7 +110,50 @@ const Invoices = () => {
     
     const matchesVendor = !vendorFilter || inv.vendorId === vendorFilter;
     
-    return matchesSearch && matchesVendor;
+    // Column-based filter
+    let matchesColumnFilter = true;
+    if (filterColumn && filterValue) {
+      const lowerFilterValue = filterValue.toLowerCase();
+      switch (filterColumn) {
+        case 'invoiceNumber':
+          matchesColumnFilter = inv.invoiceNumber.toLowerCase().includes(lowerFilterValue);
+          break;
+        case 'date':
+          matchesColumnFilter = formatDate(inv.invoiceDate).toLowerCase().includes(lowerFilterValue);
+          break;
+        case 'vendorName':
+          matchesColumnFilter = inv.vendorName.toLowerCase().includes(lowerFilterValue);
+          break;
+        case 'poNumber':
+          matchesColumnFilter = (inv.poNumber || '').toLowerCase().includes(lowerFilterValue);
+          break;
+        case 'poDate':
+          matchesColumnFilter = inv.poDate ? formatDate(inv.poDate).toLowerCase().includes(lowerFilterValue) : false;
+          break;
+        case 'items':
+          matchesColumnFilter = inv.lineItems?.some(item => 
+            item.particulars.toLowerCase().includes(lowerFilterValue)
+          ) || false;
+          break;
+        case 'total':
+          matchesColumnFilter = formatCurrency(inv.totalCost).toLowerCase().includes(lowerFilterValue);
+          break;
+        case 'received':
+          matchesColumnFilter = formatCurrency(inv.amountReceived).toLowerCase().includes(lowerFilterValue);
+          break;
+        case 'pending':
+          matchesColumnFilter = formatCurrency(inv.pendingAmount).toLowerCase().includes(lowerFilterValue);
+          break;
+        case 'status':
+          matchesColumnFilter = inv.status.toLowerCase().includes(lowerFilterValue);
+          break;
+        case 'dueDate':
+          matchesColumnFilter = formatDate(inv.dueDate).toLowerCase().includes(lowerFilterValue);
+          break;
+      }
+    }
+    
+    return matchesSearch && matchesVendor && matchesColumnFilter;
   });
 
   const getFilteredVendorName = () => {
@@ -126,6 +184,25 @@ const Invoices = () => {
     setInvoiceToShare(invoice);
     setShareModalOpen(true);
   };
+
+  const clearColumnFilter = () => {
+    setFilterColumn('');
+    setFilterValue('');
+  };
+
+  const columnOptions = [
+    { value: 'invoiceNumber', label: 'Invoice Number' },
+    { value: 'date', label: 'Date' },
+    { value: 'vendorName', label: 'Vendor Name' },
+    { value: 'poNumber', label: 'PO Number' },
+    { value: 'poDate', label: 'PO Date' },
+    { value: 'items', label: 'Items' },
+    { value: 'total', label: 'Total (₹)' },
+    { value: 'received', label: 'Received (₹)' },
+    { value: 'pending', label: 'Pending (₹)' },
+    { value: 'status', label: 'Status' },
+    { value: 'dueDate', label: 'Due Date' },
+  ];
 
   const handleDownloadTemplate = () => {
     const templateData = [
@@ -503,21 +580,84 @@ const Invoices = () => {
                   className="pl-10"
                 />
               </div>
-              <Button variant="outline" className="gap-2">
-                <Filter className="w-4 h-4" />
-                Filter
-              </Button>
+              <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Filter className="w-4 h-4" />
+                    Filter
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 bg-background z-50" align="end">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-sm">Filter by Column</h4>
+                      <Select value={filterColumn} onValueChange={setFilterColumn}>
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="Select column..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background z-50">
+                          {columnOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {filterColumn && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Filter Value</label>
+                        <Input
+                          placeholder={`Enter ${columnOptions.find(c => c.value === filterColumn)?.label}...`}
+                          value={filterValue}
+                          onChange={(e) => setFilterValue(e.target.value)}
+                          className="bg-background"
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={clearColumnFilter}
+                        className="flex-1"
+                      >
+                        Clear
+                      </Button>
+                      <Button 
+                        size="sm"
+                        onClick={() => setFilterOpen(false)}
+                        className="flex-1"
+                      >
+                        Apply
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
-            {/* Vendor Filter Badge */}
-            {vendorFilter && (
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-sm gap-2">
-                  Vendor: {getFilteredVendorName()}
-                  <button onClick={clearVendorFilter} className="hover:bg-muted rounded-full p-0.5">
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
+            {/* Filter Badges */}
+            {(vendorFilter || (filterColumn && filterValue)) && (
+              <div className="flex items-center gap-2 flex-wrap">
+                {vendorFilter && (
+                  <Badge variant="secondary" className="text-sm gap-2">
+                    Vendor: {getFilteredVendorName()}
+                    <button onClick={clearVendorFilter} className="hover:bg-muted rounded-full p-0.5">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                )}
+                {filterColumn && filterValue && (
+                  <Badge variant="secondary" className="text-sm gap-2">
+                    {columnOptions.find(c => c.value === filterColumn)?.label}: {filterValue}
+                    <button onClick={clearColumnFilter} className="hover:bg-muted rounded-full p-0.5">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                )}
                 <span className="text-sm text-muted-foreground">
                   Showing {filteredInvoices.length} invoice{filteredInvoices.length !== 1 ? 's' : ''}
                 </span>
