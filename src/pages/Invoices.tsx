@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Filter, Download, FileUp, Edit, Trash2, AlertCircle, ChevronDown, ChevronRight, X } from 'lucide-react';
+import { Plus, Search, Filter, Download, FileUp, Edit, Trash2, AlertCircle, ChevronDown, ChevronRight, X, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import { useApp } from '@/contexts/AppContext';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 import { InvoiceStatus } from '@/types';
 import { InvoiceFormModal } from '@/components/invoices/InvoiceFormModal';
+import { ShareInvoiceModal } from '@/components/invoices/ShareInvoiceModal';
 import { useToast } from '@/hooks/use-toast';
 import { useSearchParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
@@ -60,6 +61,8 @@ const Invoices = () => {
   const [invoiceToDelete, setInvoiceToDelete] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [vendorFilter, setVendorFilter] = useState<string | null>(null);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [invoiceToShare, setInvoiceToShare] = useState<any>(null);
 
   // Read vendor filter from URL params
   useEffect(() => {
@@ -117,6 +120,11 @@ const Invoices = () => {
       setDeleteDialogOpen(false);
       setInvoiceToDelete(null);
     }
+  };
+
+  const handleShare = (invoice: any) => {
+    setInvoiceToShare(invoice);
+    setShareModalOpen(true);
   };
 
   const handleDownloadTemplate = () => {
@@ -589,6 +597,22 @@ const Invoices = () => {
                         <TableCell className="text-muted-foreground">{formatDate(inv.dueDate)}</TableCell>
                         <TableCell>
                           <div className="flex items-center justify-center gap-2">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleShare(inv)}
+                                  >
+                                    <Share2 className="w-4 h-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Share Invoice</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -671,6 +695,15 @@ const Invoices = () => {
           setSelectedInvoice(null);
         }}
         invoice={selectedInvoice}
+      />
+
+      <ShareInvoiceModal
+        open={shareModalOpen}
+        onClose={() => {
+          setShareModalOpen(false);
+          setInvoiceToShare(null);
+        }}
+        invoice={invoiceToShare}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
