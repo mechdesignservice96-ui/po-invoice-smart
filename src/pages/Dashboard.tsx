@@ -136,40 +136,71 @@ const Dashboard = () => {
       )}
 
       {/* Daily Transaction Chart */}
-      <Card className="animate-scale-in">
-        <CardHeader>
-          <CardTitle>Daily Transactions (Last 14 Days)</CardTitle>
+      <Card className="animate-scale-in shadow-lg hover:shadow-xl transition-shadow">
+        <CardHeader className="bg-gradient-to-r from-primary/5 to-success/5 border-b">
+          <CardTitle className="text-xl font-bold">Daily Transactions (Last 14 Days)</CardTitle>
           <CardDescription>Track daily expenses and payments received</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <ChartContainer
             config={{
               Expenses: {
                 label: 'Expenses',
-                color: 'hsl(var(--destructive))',
+                color: 'hsl(0 84% 60%)',
               },
               Payments: {
                 label: 'Payments',
-                color: 'hsl(var(--success))',
+                color: 'hsl(142 76% 36%)',
               },
             }}
-            className="h-[300px]"
+            className="h-[350px]"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={getDailyTransactionData()}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <BarChart data={getDailyTransactionData()} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(0 84% 60%)" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="hsl(0 84% 60%)" stopOpacity={0.6} />
+                  </linearGradient>
+                  <linearGradient id="colorPayments" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(142 76% 36%)" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="hsl(142 76% 36%)" stopOpacity={0.6} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" vertical={false} />
                 <XAxis 
                   dataKey="date" 
-                  className="text-xs"
+                  className="text-xs font-medium"
                   angle={-45}
                   textAnchor="end"
                   height={80}
+                  stroke="hsl(var(--muted-foreground))"
                 />
-                <YAxis className="text-xs" />
-                <ChartTooltip content={<ChartTooltipContent formatter={(value: number) => formatCurrency(value)} />} />
-                <Legend />
-                <Bar dataKey="Expenses" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Payments" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
+                <YAxis 
+                  className="text-xs font-medium"
+                  stroke="hsl(var(--muted-foreground))"
+                  tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
+                />
+                <ChartTooltip 
+                  content={<ChartTooltipContent formatter={(value: number) => formatCurrency(value)} />} 
+                  cursor={{ fill: 'hsl(var(--muted)/0.1)' }}
+                />
+                <Legend 
+                  wrapperStyle={{ paddingTop: '20px' }}
+                  iconType="circle"
+                />
+                <Bar 
+                  dataKey="Expenses" 
+                  fill="url(#colorExpenses)" 
+                  radius={[8, 8, 0, 0]} 
+                  maxBarSize={60}
+                />
+                <Bar 
+                  dataKey="Payments" 
+                  fill="url(#colorPayments)" 
+                  radius={[8, 8, 0, 0]} 
+                  maxBarSize={60}
+                />
               </BarChart>
             </ResponsiveContainer>
           </ChartContainer>
@@ -178,43 +209,76 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Chart */}
-        <Card className="animate-scale-in">
-          <CardHeader>
-            <CardTitle>Monthly SO vs Paid Amount</CardTitle>
+        <Card className="animate-scale-in shadow-lg hover:shadow-xl transition-shadow">
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/10 border-b">
+            <CardTitle className="text-xl font-bold">Monthly SO vs Paid Amount</CardTitle>
             <CardDescription>Track sale orders against payments received</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={getMonthlyData()}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="month" className="text-xs" />
-                <YAxis className="text-xs" />
+          <CardContent className="pt-6">
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart data={getMonthlyData()} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorSO" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(221 83% 53%)" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="hsl(221 83% 53%)" stopOpacity={0.6} />
+                  </linearGradient>
+                  <linearGradient id="colorPaid" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(142 76% 36%)" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="hsl(142 76% 36%)" stopOpacity={0.6} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" vertical={false} />
+                <XAxis 
+                  dataKey="month" 
+                  className="text-xs font-medium"
+                  stroke="hsl(var(--muted-foreground))"
+                />
+                <YAxis 
+                  className="text-xs font-medium"
+                  stroke="hsl(var(--muted-foreground))"
+                  tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',
                     border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                   }}
                   formatter={(value: number) => formatCurrency(value)}
+                  cursor={{ fill: 'hsl(var(--muted)/0.1)' }}
                 />
-                <Legend />
-                <Bar dataKey="SO Value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Paid Amount" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
+                <Legend 
+                  wrapperStyle={{ paddingTop: '20px' }}
+                  iconType="circle"
+                />
+                <Bar 
+                  dataKey="SO Value" 
+                  fill="url(#colorSO)" 
+                  radius={[8, 8, 0, 0]} 
+                  maxBarSize={60}
+                />
+                <Bar 
+                  dataKey="Paid Amount" 
+                  fill="url(#colorPaid)" 
+                  radius={[8, 8, 0, 0]} 
+                  maxBarSize={60}
+                />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
         {/* Overdue Invoices Table */}
-        <Card className="animate-scale-in">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <Card className="animate-scale-in shadow-lg hover:shadow-xl transition-shadow">
+          <CardHeader className="bg-gradient-to-r from-destructive/5 to-warning/5 border-b">
+            <CardTitle className="flex items-center gap-2 text-xl font-bold">
               <Clock className="w-5 h-5 text-destructive" />
               Recent Overdue Invoices
             </CardTitle>
             <CardDescription>Invoices that need immediate attention</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {overdueInvoices.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <CheckCircle2 className="w-12 h-12 mx-auto mb-2 text-success" />
