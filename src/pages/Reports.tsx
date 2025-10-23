@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useApp } from '@/contexts/AppContext';
 import { formatCurrency } from '@/utils/formatters';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { TrendingUp, Users, DollarSign, AlertCircle } from 'lucide-react';
 
 const Reports = () => {
@@ -42,6 +42,7 @@ const Reports = () => {
         name: item.customerName.length > 15 ? item.customerName.substring(0, 15) + '...' : item.customerName,
         'Paid Amount': item.paidAmount,
         'Balance': item.balanceAmount,
+        'Total': item.billingAmount,
       }));
   }, [saleOrders]);
 
@@ -63,18 +64,44 @@ const Reports = () => {
   // Custom tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      const paidAmount = payload.find((p: any) => p.dataKey === 'Paid Amount')?.value || 0;
+      const balanceAmount = payload.find((p: any) => p.dataKey === 'Balance')?.value || 0;
+      const total = paidAmount + balanceAmount;
+      
       return (
         <div className="bg-card border border-border rounded-lg p-4 shadow-lg animate-scale-in">
           <p className="font-semibold text-foreground mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: {formatCurrency(entry.value)}
-            </p>
-          ))}
-          <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border">
-            Total: {formatCurrency(payload.reduce((sum: number, p: any) => sum + p.value, 0))}
+          <p className="text-sm text-green-600">
+            Paid Amount: {formatCurrency(paidAmount)}
+          </p>
+          <p className="text-sm text-orange-600">
+            Balance: {formatCurrency(balanceAmount)}
+          </p>
+          <p className="text-sm font-bold text-foreground mt-2 pt-2 border-t border-border">
+            Total Billing: {formatCurrency(total)}
           </p>
         </div>
+      );
+    }
+    return null;
+  };
+
+  // Custom label to show total on top of bars
+  const renderCustomLabel = (props: any) => {
+    const { x, y, width, value, index } = props;
+    const data = billingChartData[index];
+    if (data && data.Total) {
+      return (
+        <text 
+          x={x + width / 2} 
+          y={y - 8} 
+          fill="hsl(var(--foreground))" 
+          textAnchor="middle" 
+          fontSize={12}
+          fontWeight={600}
+        >
+          {formatCurrency(data.Total)}
+        </text>
       );
     }
     return null;
@@ -166,7 +193,7 @@ const Reports = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={billingChartData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                  margin={{ top: 40, right: 30, left: 20, bottom: 80 }}
                   className="animate-fade-in"
                 >
                   <defs>
@@ -200,18 +227,22 @@ const Reports = () => {
                   />
                   <Bar 
                     dataKey="Paid Amount" 
+                    stackId="billing"
                     fill="url(#paidGradient)" 
-                    radius={[8, 8, 0, 0]}
+                    radius={[0, 0, 0, 0]}
                     animationDuration={1000}
                     animationBegin={0}
                   />
                   <Bar 
                     dataKey="Balance" 
+                    stackId="billing"
                     fill="url(#balanceGradient)" 
                     radius={[8, 8, 0, 0]}
                     animationDuration={1000}
                     animationBegin={200}
-                  />
+                  >
+                    <LabelList content={renderCustomLabel} />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
