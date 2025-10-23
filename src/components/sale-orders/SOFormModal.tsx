@@ -51,6 +51,7 @@ const soFormSchema = z.object({
   poNumber: z.string().optional(),
   poDate: z.string().optional(),
   customerId: z.string().min(1, 'Customer is required'),
+  status: z.enum(['Draft', 'Confirmed', 'Dispatched', 'Delivered', 'Completed']),
   lineItems: z.array(lineItemSchema).min(1, 'At least one item is required'),
   notes: z.string().optional(),
 });
@@ -75,6 +76,7 @@ export const SOFormModal = ({ open, onOpenChange, so }: SOFormModalProps) => {
       poNumber: '',
       poDate: '',
       customerId: '',
+      status: 'Draft' as const,
       lineItems: [],
       notes: '',
     },
@@ -88,6 +90,7 @@ export const SOFormModal = ({ open, onOpenChange, so }: SOFormModalProps) => {
         poNumber: so.poNumber || '',
         poDate: so.poDate ? new Date(so.poDate).toISOString().split('T')[0] : '',
         customerId: so.customerId,
+        status: so.status,
         lineItems: so.lineItems || [],
         notes: so.notes || '',
       });
@@ -102,6 +105,7 @@ export const SOFormModal = ({ open, onOpenChange, so }: SOFormModalProps) => {
         poNumber: '',
         poDate: '',
         customerId: '',
+        status: 'Draft' as const,
         lineItems: [],
         notes: '',
       });
@@ -172,7 +176,7 @@ export const SOFormModal = ({ open, onOpenChange, so }: SOFormModalProps) => {
       customerName: customer.name,
       lineItems: lineItems,
       total: calculateTotal(),
-      status: 'Confirmed',
+      status: values.status,
       notes: values.notes,
     };
 
@@ -261,30 +265,57 @@ export const SOFormModal = ({ open, onOpenChange, so }: SOFormModalProps) => {
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="customerId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Customer</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select customer" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {customers.map(customer => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.name} ({customer.taxId})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="customerId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Customer</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select customer" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {customers.map(customer => (
+                          <SelectItem key={customer.id} value={customer.id}>
+                            {customer.name} ({customer.taxId})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Draft">Draft</SelectItem>
+                        <SelectItem value="Confirmed">Confirmed</SelectItem>
+                        <SelectItem value="Dispatched">Dispatched</SelectItem>
+                        <SelectItem value="Delivered">Delivered</SelectItem>
+                        <SelectItem value="Completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             {selectedCustomer && (
               <div className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-md">
