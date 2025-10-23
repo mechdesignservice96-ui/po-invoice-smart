@@ -4,7 +4,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useApp } from '@/contexts/AppContext';
 import { formatCurrency } from '@/utils/formatters';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LabelList, LineChart, Line, Area, AreaChart } from 'recharts';
-import { TrendingUp, Users, DollarSign, AlertCircle, Calendar } from 'lucide-react';
+import { TrendingUp, Users, IndianRupee, AlertCircle, Calendar } from 'lucide-react';
 import { format, subDays, subMonths, subYears, isAfter, isBefore, startOfDay } from 'date-fns';
 
 type TimePeriod = '1day' | '15days' | '30days' | '6months' | '1year';
@@ -231,7 +231,7 @@ const Reports = () => {
         <Card className="hover-scale">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-primary" />
+              <IndianRupee className="h-4 w-4 text-primary" />
               Total Billing
             </CardTitle>
           </CardHeader>
