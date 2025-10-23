@@ -167,6 +167,23 @@ export const SOFormModal = ({ open, onOpenChange, so }: SOFormModalProps) => {
       return;
     }
 
+    // Validate each line item
+    for (let i = 0; i < lineItems.length; i++) {
+      const item = lineItems[i];
+      if (!item.particulars || item.particulars.trim() === '') {
+        toast.error(`Item #${i + 1}: Particulars cannot be empty`);
+        return;
+      }
+      if (item.soQty <= 0) {
+        toast.error(`Item #${i + 1}: SO Quantity must be greater than 0`);
+        return;
+      }
+      if (item.basicAmount <= 0) {
+        toast.error(`Item #${i + 1}: Basic Amount must be greater than 0`);
+        return;
+      }
+    }
+
     const soData: Omit<SaleOrder, 'id' | 'createdAt'> = {
       soNumber: values.soNumber,
       soDate: new Date(values.soDate),
