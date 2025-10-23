@@ -1,12 +1,17 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useApp } from '@/contexts/AppContext';
 import { formatCurrency } from '@/utils/formatters';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LabelList } from 'recharts';
-import { TrendingUp, Users, DollarSign, AlertCircle } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LabelList, LineChart, Line, Area, AreaChart } from 'recharts';
+import { TrendingUp, Users, DollarSign, AlertCircle, Calendar } from 'lucide-react';
+import { format, subDays, subMonths, subYears, isAfter, isBefore, startOfDay } from 'date-fns';
+
+type TimePeriod = '1day' | '15days' | '30days' | '6months' | '1year';
 
 const Reports = () => {
-  const { saleOrders, customers } = useApp();
+  const { saleOrders, customers, expenses } = useApp();
+  const [expensePeriod, setExpensePeriod] = useState<TimePeriod>('30days');
 
   // Calculate customer billing data for chart
   const billingChartData = useMemo(() => {
@@ -102,6 +107,102 @@ const Reports = () => {
         >
           {formatCurrency(data.Total)}
         </text>
+      );
+    }
+    return null;
+  };
+
+  // Get date range based on selected period
+  const getDateRange = (period: TimePeriod): Date => {
+    const today = new Date();
+    switch (period) {
+      case '1day':
+        return subDays(today, 1);
+      case '15days':
+        return subDays(today, 15);
+      case '30days':
+        return subDays(today, 30);
+      case '6months':
+        return subMonths(today, 6);
+      case '1year':
+        return subYears(today, 1);
+      default:
+        return subDays(today, 30);
+    }
+  };
+
+  // Calculate daily expenses chart data
+  const dailyExpensesData = useMemo(() => {
+    const startDate = getDateRange(expensePeriod);
+    const today = new Date();
+    
+    // Filter expenses within the date range
+    const filteredExpenses = expenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return isAfter(expenseDate, startDate) && isBefore(expenseDate, today);
+    });
+
+    // Group expenses by date
+    const expensesByDate = new Map<string, number>();
+    
+    filteredExpenses.forEach(expense => {
+      const dateKey = format(new Date(expense.date), 'MMM dd');
+      expensesByDate.set(dateKey, (expensesByDate.get(dateKey) || 0) + expense.amount);
+    });
+
+    // Convert to array and sort by date
+    const data = Array.from(expensesByDate.entries()).map(([date, amount]) => ({
+      date,
+      amount,
+    }));
+
+    // If no data, show a message-friendly empty array
+    return data.length > 0 ? data : [];
+  }, [expenses, expensePeriod]);
+
+  // Calculate expense stats
+  const expenseStats = useMemo(() => {
+    const startDate = getDateRange(expensePeriod);
+    const today = new Date();
+    
+    const filteredExpenses = expenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return isAfter(expenseDate, startDate) && isBefore(expenseDate, today);
+    });
+
+    const totalExpense = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const avgDaily = filteredExpenses.length > 0 ? totalExpense / Math.max(dailyExpensesData.length, 1) : 0;
+    const paidCount = filteredExpenses.filter(exp => exp.status === 'Paid').length;
+    const pendingCount = filteredExpenses.filter(exp => exp.status === 'Pending').length;
+
+    // Category breakdown
+    const byCategory = filteredExpenses.reduce((acc, exp) => {
+      acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const topCategory = Object.entries(byCategory).sort((a, b) => b[1] - a[1])[0];
+
+    return {
+      total: totalExpense,
+      avgDaily,
+      paidCount,
+      pendingCount,
+      topCategory: topCategory ? topCategory[0] : 'N/A',
+      topCategoryAmount: topCategory ? topCategory[1] : 0,
+    };
+  }, [expenses, expensePeriod, dailyExpensesData.length]);
+
+  // Custom tooltip for expenses
+  const ExpenseTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-card border border-border rounded-lg p-4 shadow-lg animate-scale-in">
+          <p className="font-semibold text-foreground mb-2">{label}</p>
+          <p className="text-sm text-primary font-medium">
+            Expense: {formatCurrency(payload[0].value)}
+          </p>
+        </div>
       );
     }
     return null;
@@ -244,6 +345,106 @@ const Reports = () => {
                     <LabelList content={renderCustomLabel} />
                   </Bar>
                 </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Daily Expenses Chart */}
+      <Card className="animate-scale-in">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" />
+                Daily Expenses Tracker
+              </CardTitle>
+              <CardDescription>
+                Track your daily expenses over different time periods
+              </CardDescription>
+            </div>
+            <Tabs value={expensePeriod} onValueChange={(value) => setExpensePeriod(value as TimePeriod)}>
+              <TabsList>
+                <TabsTrigger value="1day">1D</TabsTrigger>
+                <TabsTrigger value="15days">15D</TabsTrigger>
+                <TabsTrigger value="30days">30D</TabsTrigger>
+                <TabsTrigger value="6months">6M</TabsTrigger>
+                <TabsTrigger value="1year">1Y</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Expense Stats */}
+          <div className="grid gap-4 md:grid-cols-4 mb-6">
+            <div className="bg-accent/50 rounded-lg p-4">
+              <div className="text-sm text-muted-foreground mb-1">Total Expenses</div>
+              <div className="text-2xl font-bold">{formatCurrency(expenseStats.total)}</div>
+            </div>
+            <div className="bg-accent/50 rounded-lg p-4">
+              <div className="text-sm text-muted-foreground mb-1">Avg. Daily</div>
+              <div className="text-2xl font-bold">{formatCurrency(expenseStats.avgDaily)}</div>
+            </div>
+            <div className="bg-accent/50 rounded-lg p-4">
+              <div className="text-sm text-muted-foreground mb-1">Top Category</div>
+              <div className="text-lg font-bold">{expenseStats.topCategory}</div>
+              <div className="text-xs text-muted-foreground">{formatCurrency(expenseStats.topCategoryAmount)}</div>
+            </div>
+            <div className="bg-accent/50 rounded-lg p-4">
+              <div className="text-sm text-muted-foreground mb-1">Status</div>
+              <div className="text-sm font-medium">
+                <span className="text-green-600">{expenseStats.paidCount} Paid</span>
+                {' / '}
+                <span className="text-orange-600">{expenseStats.pendingCount} Pending</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Chart */}
+          {dailyExpensesData.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg font-medium mb-2">No expense data available</p>
+              <p className="text-sm">Add daily expenses to see the tracker chart</p>
+            </div>
+          ) : (
+            <div className="w-full h-[400px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={dailyExpensesData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                  className="animate-fade-in"
+                >
+                  <defs>
+                    <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                    stroke="hsl(var(--border))"
+                  />
+                  <YAxis 
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                    stroke="hsl(var(--border))"
+                    tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
+                  />
+                  <Tooltip content={<ExpenseTooltip />} cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 2 }} />
+                  <Area 
+                    type="monotone" 
+                    dataKey="amount" 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={3}
+                    fill="url(#expenseGradient)" 
+                    animationDuration={1200}
+                    dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, strokeWidth: 0 }}
+                  />
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           )}
