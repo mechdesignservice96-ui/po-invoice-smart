@@ -675,26 +675,27 @@ const Invoices = () => {
           </div>
 
           {/* Table */}
-          <div className="border rounded-lg overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="w-12"></TableHead>
-                  <TableHead className="font-semibold">Sl. No</TableHead>
-                  <TableHead className="font-semibold">Invoice No.</TableHead>
-                  <TableHead className="font-semibold">Date</TableHead>
-                  <TableHead className="font-semibold">Vendor Name</TableHead>
-                  <TableHead className="font-semibold">PO Number</TableHead>
-                  <TableHead className="font-semibold">PO Date</TableHead>
-                  <TableHead className="font-semibold">Items</TableHead>
-                  <TableHead className="font-semibold text-right">Total (₹)</TableHead>
-                  <TableHead className="font-semibold text-right">Received (₹)</TableHead>
-                  <TableHead className="font-semibold text-right">Pending (₹)</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="font-semibold">Due Date</TableHead>
-                  <TableHead className="font-semibold text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+          <div className="border rounded-lg overflow-hidden">
+            <div className="max-h-[calc(100vh-38rem)] overflow-y-auto">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="w-12"></TableHead>
+                    <TableHead className="font-semibold">Sl. No</TableHead>
+                    <TableHead className="font-semibold">Invoice No.</TableHead>
+                    <TableHead className="font-semibold">Date</TableHead>
+                    <TableHead className="font-semibold">Vendor Name</TableHead>
+                    <TableHead className="font-semibold">PO Number</TableHead>
+                    <TableHead className="font-semibold">PO Date</TableHead>
+                    <TableHead className="font-semibold">Items</TableHead>
+                    <TableHead className="font-semibold text-right">Total (₹)</TableHead>
+                    <TableHead className="font-semibold text-right">Received (₹)</TableHead>
+                    <TableHead className="font-semibold text-right">Pending (₹)</TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="font-semibold">Due Date</TableHead>
+                    <TableHead className="font-semibold text-center">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {filteredInvoices.length === 0 ? (
                   <TableRow>
@@ -844,6 +845,7 @@ const Invoices = () => {
               </TableBody>
             </Table>
           </div>
+        </div>
         </CardContent>
       </Card>
 

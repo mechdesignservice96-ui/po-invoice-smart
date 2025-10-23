@@ -444,25 +444,26 @@ const SaleOrders = () => {
 
           {/* Table */}
           <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="w-12"></TableHead>
-                  <TableHead className="font-semibold">Sl. No</TableHead>
-                  <TableHead className="font-semibold">SO Number</TableHead>
-                  <TableHead className="font-semibold">SO Date</TableHead>
-                  <TableHead className="font-semibold">Customer</TableHead>
-                  <TableHead className="font-semibold">PO Number</TableHead>
-                  <TableHead className="font-semibold">PO Date</TableHead>
-                  <TableHead className="font-semibold">Items</TableHead>
-                  <TableHead className="font-semibold text-right">Qty Ordered</TableHead>
-                  <TableHead className="font-semibold text-right">Qty Dispatched</TableHead>
-                  <TableHead className="font-semibold text-right">Balance</TableHead>
-                  <TableHead className="font-semibold text-right">Total Value</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="font-semibold text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+            <div className="max-h-[calc(100vh-36rem)] overflow-y-auto">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="w-12"></TableHead>
+                    <TableHead className="font-semibold">Sl. No</TableHead>
+                    <TableHead className="font-semibold">SO Number</TableHead>
+                    <TableHead className="font-semibold">SO Date</TableHead>
+                    <TableHead className="font-semibold">Customer</TableHead>
+                    <TableHead className="font-semibold">PO Number</TableHead>
+                    <TableHead className="font-semibold">PO Date</TableHead>
+                    <TableHead className="font-semibold">Items</TableHead>
+                    <TableHead className="font-semibold text-right">Qty Ordered</TableHead>
+                    <TableHead className="font-semibold text-right">Qty Dispatched</TableHead>
+                    <TableHead className="font-semibold text-right">Balance</TableHead>
+                    <TableHead className="font-semibold text-right">Total Value</TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="font-semibold text-center">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {filteredSOs.length === 0 ? (
                 <TableRow>
@@ -631,6 +632,7 @@ const SaleOrders = () => {
               </TableBody>
             </Table>
           </div>
+        </div>
         </CardContent>
       </Card>
 

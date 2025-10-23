@@ -322,68 +322,70 @@ const DailyExpenses = () => {
             </div>
           </div>
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="font-semibold">Sl. No</TableHead>
-                  <TableHead className="font-semibold">Date</TableHead>
-                  <TableHead className="font-semibold">Category</TableHead>
-                  <TableHead className="font-semibold">Description</TableHead>
-                  <TableHead className="font-semibold">Payment Mode</TableHead>
-                  <TableHead className="font-semibold text-right">Amount (₹)</TableHead>
-                  <TableHead className="font-semibold text-center">Status</TableHead>
-                  <TableHead className="font-semibold text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredExpenses.length === 0 ? (
+          <div className="rounded-md border overflow-hidden">
+            <div className="max-h-[calc(100vh-32rem)] overflow-y-auto">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      No expenses found. Add your first expense to get started.
-                    </TableCell>
+                    <TableHead className="font-semibold">Sl. No</TableHead>
+                    <TableHead className="font-semibold">Date</TableHead>
+                    <TableHead className="font-semibold">Category</TableHead>
+                    <TableHead className="font-semibold">Description</TableHead>
+                    <TableHead className="font-semibold">Payment Mode</TableHead>
+                    <TableHead className="font-semibold text-right">Amount (₹)</TableHead>
+                    <TableHead className="font-semibold text-center">Status</TableHead>
+                    <TableHead className="font-semibold text-center">Actions</TableHead>
                   </TableRow>
-                ) : (
-                  filteredExpenses.map((expense, index) => (
-                    <TableRow key={expense.id} className="hover:bg-muted/30 transition-colors">
-                      <TableCell className="font-medium">{index + 1}</TableCell>
-                      <TableCell>{formatDate(expense.date)}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{expense.category}</Badge>
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate">{expense.description}</TableCell>
-                      <TableCell>{expense.paymentMode}</TableCell>
-                      <TableCell className="text-right font-medium">{formatCurrency(expense.amount)}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant={expense.status === 'Paid' ? 'default' : 'secondary'}>
-                          {expense.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(expense)}
-                            className="h-8 w-8 hover:bg-primary/10"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(expense.id, expense.description)}
-                            className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredExpenses.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        No expenses found. Add your first expense to get started.
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    filteredExpenses.map((expense, index) => (
+                      <TableRow key={expense.id} className="hover:bg-muted/30 transition-colors">
+                        <TableCell className="font-medium">{index + 1}</TableCell>
+                        <TableCell>{formatDate(expense.date)}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{expense.category}</Badge>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">{expense.description}</TableCell>
+                        <TableCell>{expense.paymentMode}</TableCell>
+                        <TableCell className="text-right font-medium">{formatCurrency(expense.amount)}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={expense.status === 'Paid' ? 'default' : 'secondary'}>
+                            {expense.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(expense)}
+                              className="h-8 w-8 hover:bg-primary/10"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(expense.id, expense.description)}
+                              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
 
           {filteredExpenses.length > 0 && (

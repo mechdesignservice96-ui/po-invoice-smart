@@ -242,9 +242,9 @@ const Customers = () => {
 
           {/* Table */}
           <div className="border rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="max-h-[calc(100vh-32rem)] overflow-y-auto">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow className="bg-muted/50">
                     <TableHead className="font-semibold w-16">Sl. No</TableHead>
                     <TableHead className="font-semibold min-w-[200px]">Customer Name</TableHead>

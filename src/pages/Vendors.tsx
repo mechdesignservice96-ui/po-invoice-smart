@@ -234,19 +234,20 @@ const Vendors = () => {
 
           {/* Table */}
           <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="font-semibold">Sl. No</TableHead>
-                  <TableHead className="font-semibold">Vendor Name</TableHead>
-                  <TableHead className="font-semibold">Contact Person</TableHead>
-                  <TableHead className="font-semibold">Email</TableHead>
-                  <TableHead className="font-semibold">Phone</TableHead>
-                  <TableHead className="font-semibold">GST-TIN Number</TableHead>
-                  <TableHead className="font-semibold text-center">Payment Terms</TableHead>
-                  <TableHead className="font-semibold text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+            <div className="max-h-[calc(100vh-28rem)] overflow-y-auto">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="font-semibold">Sl. No</TableHead>
+                    <TableHead className="font-semibold">Vendor Name</TableHead>
+                    <TableHead className="font-semibold">Contact Person</TableHead>
+                    <TableHead className="font-semibold">Email</TableHead>
+                    <TableHead className="font-semibold">Phone</TableHead>
+                    <TableHead className="font-semibold">GST-TIN Number</TableHead>
+                    <TableHead className="font-semibold text-center">Payment Terms</TableHead>
+                    <TableHead className="font-semibold text-center">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {filteredVendors.length === 0 ? (
                   <TableRow>
@@ -290,6 +291,7 @@ const Vendors = () => {
               </TableBody>
             </Table>
           </div>
+        </div>
         </CardContent>
       </Card>
 

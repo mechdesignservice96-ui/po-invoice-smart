@@ -317,21 +317,22 @@ const Billing = () => {
           </div>
 
           {/* Table */}
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[80px]">Sl. No</TableHead>
-                  <TableHead>Customer Name</TableHead>
-                  <TableHead className="text-center">Total Invoices</TableHead>
-                  <TableHead className="text-right">Billing Amount (₹)</TableHead>
-                  <TableHead className="text-right">Paid Amount (₹)</TableHead>
-                  <TableHead className="text-right">Balance (₹)</TableHead>
-                  <TableHead>Last Invoice Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+          <div className="border rounded-lg overflow-hidden">
+            <div className="max-h-[calc(100vh-36rem)] overflow-y-auto">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableRow>
+                    <TableHead className="w-[80px]">Sl. No</TableHead>
+                    <TableHead>Customer Name</TableHead>
+                    <TableHead className="text-center">Total Invoices</TableHead>
+                    <TableHead className="text-right">Billing Amount (₹)</TableHead>
+                    <TableHead className="text-right">Paid Amount (₹)</TableHead>
+                    <TableHead className="text-right">Balance (₹)</TableHead>
+                    <TableHead>Last Invoice Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {filteredCustomers.length === 0 ? (
                   <TableRow>
@@ -384,6 +385,7 @@ const Billing = () => {
               </TableBody>
             </Table>
           </div>
+        </div>
         </CardContent>
       </Card>
 
