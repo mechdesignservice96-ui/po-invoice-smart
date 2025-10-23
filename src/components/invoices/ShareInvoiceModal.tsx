@@ -150,24 +150,24 @@ export const ShareInvoiceModal = ({ open, onClose, invoice }: ShareInvoiceModalP
       doc.setTextColor(0, 0, 0);
       
       // Table Header
-      doc.setFillColor(250, 250, 250);
-      doc.rect(20, yPos, pageWidth - 40, 8, 'F');
-      doc.setDrawColor(200, 200, 200);
-      doc.setLineWidth(0.3);
-      doc.rect(20, yPos, pageWidth - 40, 8, 'S');
+      doc.setFillColor(240, 240, 240);
+      doc.rect(20, yPos, pageWidth - 40, 10, 'F');
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineWidth(0.5);
+      doc.rect(20, yPos, pageWidth - 40, 10, 'S');
       
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.text('Description', 25, yPos + 5);
-      doc.text('Quantity', 120, yPos + 5, { align: 'center' });
-      doc.text('Unit price (₹)', 150, yPos + 5, { align: 'right' });
-      doc.text('Amount (₹)', pageWidth - 25, yPos + 5, { align: 'right' });
+      doc.setFontSize(10);
+      doc.text('Description', 25, yPos + 6);
+      doc.text('Qty', 125, yPos + 6, { align: 'center' });
+      doc.text('Unit Price', 155, yPos + 6, { align: 'right' });
+      doc.text('Amount', pageWidth - 25, yPos + 6, { align: 'right' });
       
-      yPos += 8;
+      yPos += 10;
 
       // Line Items
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
+      doc.setFontSize(10);
       
       (invoice.lineItems || []).forEach((item, index) => {
         if (yPos > pageHeight - 80) {
@@ -175,39 +175,57 @@ export const ShareInvoiceModal = ({ open, onClose, invoice }: ShareInvoiceModalP
           yPos = 20;
         }
 
-        const itemText = doc.splitTextToSize(item.particulars, 90);
-        const itemHeight = Math.max(itemText.length * 5, 8);
+        const itemText = doc.splitTextToSize(item.particulars, 85);
+        const itemHeight = Math.max(itemText.length * 6, 10);
         
         // Alternating row colors
         if (index % 2 === 0) {
-          doc.setFillColor(252, 252, 252);
+          doc.setFillColor(248, 248, 248);
           doc.rect(20, yPos, pageWidth - 40, itemHeight, 'F');
         }
         
-        doc.setDrawColor(240, 240, 240);
+        doc.setDrawColor(220, 220, 220);
         doc.rect(20, yPos, pageWidth - 40, itemHeight, 'S');
         
-        doc.text(itemText, 25, yPos + 5);
+        doc.setFont('helvetica', 'normal');
+        doc.text(itemText, 25, yPos + 6);
         
-        const centerY = yPos + (itemHeight / 2) + 1;
-        doc.text(item.qtyDispatched.toString(), 120, centerY, { align: 'center' });
-        doc.text(formatCurrency(item.basicAmount / item.qtyDispatched), 150, centerY, { align: 'right' });
-        doc.text(formatCurrency(item.lineTotal), pageWidth - 25, centerY, { align: 'right' });
+        const centerY = yPos + (itemHeight / 2) + 1.5;
+        doc.setFont('helvetica', 'bold');
+        doc.text(item.qtyDispatched.toString(), 125, centerY, { align: 'center' });
+        
+        const unitPrice = item.basicAmount / item.qtyDispatched;
+        const unitPriceFormatted = new Intl.NumberFormat('en-IN', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(unitPrice);
+        doc.text(`₹${unitPriceFormatted}`, 155, centerY, { align: 'right' });
+        
+        const lineTotalFormatted = new Intl.NumberFormat('en-IN', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(item.lineTotal);
+        doc.text(`₹${lineTotalFormatted}`, pageWidth - 25, centerY, { align: 'right' });
         
         yPos += itemHeight;
       });
 
-      // Total line
-      yPos += 2;
-      doc.setDrawColor(0, 0, 0);
-      doc.setLineWidth(0.5);
-      doc.line(120, yPos, pageWidth - 20, yPos);
-      yPos += 6;
+      // Total section
+      yPos += 5;
+      doc.setDrawColor(100, 100, 100);
+      doc.setLineWidth(0.8);
+      doc.line(125, yPos, pageWidth - 20, yPos);
+      yPos += 8;
       
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.text('Total (NZD):', 120, yPos);
-      doc.text(formatCurrency(invoice.totalCost), pageWidth - 25, yPos, { align: 'right' });
+      doc.setFontSize(12);
+      doc.text('TOTAL:', 125, yPos);
+      
+      const totalFormatted = new Intl.NumberFormat('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(invoice.totalCost);
+      doc.text(`₹${totalFormatted}`, pageWidth - 25, yPos, { align: 'right' });
       
       yPos += 15;
 
