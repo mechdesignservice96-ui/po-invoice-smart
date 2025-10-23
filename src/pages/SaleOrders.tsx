@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Plus, Search, Filter, FileDown, FileUp, Edit, Trash2, ExternalLink, FileText } from 'lucide-react';
+import { Plus, Search, Filter, FileDown, FileUp, Edit, Trash2, ExternalLink, FileText, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,10 +56,21 @@ const SaleOrders = () => {
   const [soToDelete, setSOToDelete] = useState<string | null>(null);
   const [createInvoiceDialogOpen, setCreateInvoiceDialogOpen] = useState(false);
   const [soForInvoice, setSOForInvoice] = useState<(typeof saleOrders)[0] | null>(null);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   // Get customer info
   const getCustomerInfo = (customerId: string) => {
     return customers.find(c => c.id === customerId);
+  };
+
+  const toggleRowExpansion = (soId: string) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(soId)) {
+      newExpanded.delete(soId);
+    } else {
+      newExpanded.add(soId);
+    }
+    setExpandedRows(newExpanded);
   };
 
   const filteredSOs = saleOrders.filter(
@@ -437,6 +448,7 @@ const SaleOrders = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
+                  <TableHead className="w-12"></TableHead>
                   <TableHead className="font-semibold">Sl. No</TableHead>
                   <TableHead className="font-semibold">SO Number</TableHead>
                   <TableHead className="font-semibold">SO Date</TableHead>
@@ -455,7 +467,7 @@ const SaleOrders = () => {
               <TableBody>
                 {filteredSOs.length === 0 ? (
                 <TableRow>
-                    <TableCell colSpan={13} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={14} className="text-center py-8 text-muted-foreground">
                       No sale orders found. Create your first SO to get started.
                     </TableCell>
                   </TableRow>
@@ -467,70 +479,153 @@ const SaleOrders = () => {
                     const totalBalance = so.lineItems.reduce((sum, item) => sum + item.balanceQty, 0);
                     
                     return (
-                      <TableRow key={so.id} className="hover:bg-muted/30 transition-colors">
-                        <TableCell className="text-muted-foreground">{index + 1}</TableCell>
-                        <TableCell className="font-medium text-primary">{so.soNumber}</TableCell>
-                        <TableCell className="text-muted-foreground">{formatDate(so.soDate)}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{so.customerName}</span>
-                            {customer && (
-                              <span className="text-xs text-muted-foreground">{customer.phone}</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {so.poNumber || '-'}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {so.poDate ? formatDate(so.poDate) : '-'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {so.lineItems.length} item{so.lineItems.length !== 1 ? 's' : ''}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-medium">{totalQtyOrdered}</TableCell>
-                        <TableCell className="text-right font-medium text-primary">{totalQtyDispatched}</TableCell>
-                        <TableCell className="text-right font-medium text-warning">
-                          {totalBalance > 0 ? totalBalance : '✓'}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">
-                          {formatCurrency(so.total)}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(so.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-1 justify-center">
+                      <>
+                        <TableRow key={so.id} className="hover:bg-muted/30 transition-colors">
+                          <TableCell>
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleEdit(so)}
                               className="h-8 w-8"
-                              title="Edit SO"
+                              onClick={() => toggleRowExpansion(so.id)}
                             >
-                              <Edit className="h-4 w-4" />
+                              {expandedRows.has(so.id) ? (
+                                <ChevronDown className="w-4 h-4" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4" />
+                              )}
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleCreateInvoice(so)}
-                              className="h-8 w-8 text-success hover:text-success"
-                              title="Create Invoice"
-                            >
-                              <FileText className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDelete(so.id)}
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                              title="Delete SO"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{index + 1}</TableCell>
+                          <TableCell className="font-medium text-primary">{so.soNumber}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(so.soDate)}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{so.customerName}</span>
+                              {customer && (
+                                <span className="text-xs text-muted-foreground">{customer.phone}</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {so.poNumber || '-'}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {so.poDate ? formatDate(so.poDate) : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {so.lineItems.length} item{so.lineItems.length !== 1 ? 's' : ''}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-medium">{totalQtyOrdered}</TableCell>
+                          <TableCell className="text-right font-medium text-primary">{totalQtyDispatched}</TableCell>
+                          <TableCell className="text-right font-medium text-warning">
+                            {totalBalance > 0 ? totalBalance : '✓'}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold">
+                            {formatCurrency(so.total)}
+                          </TableCell>
+                          <TableCell>{getStatusBadge(so.status)}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-1 justify-center">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(so)}
+                                className="h-8 w-8"
+                                title="Edit SO"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleCreateInvoice(so)}
+                                className="h-8 w-8 text-success hover:text-success"
+                                title="Create Invoice"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(so.id)}
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                title="Delete SO"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+
+                        {/* Expanded Line Items */}
+                        {expandedRows.has(so.id) && so.lineItems && so.lineItems.length > 0 && (
+                          <TableRow className="bg-muted/20">
+                            <TableCell colSpan={14} className="p-0">
+                              <div className="px-6 py-4">
+                                <div className="mb-4 p-4 bg-background rounded-lg border">
+                                  <h4 className="text-sm font-semibold mb-3">Sale Order Summary</h4>
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                    <div>
+                                      <span className="text-muted-foreground">Total Items:</span>
+                                      <div className="font-semibold text-lg">{so.lineItems.length}</div>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground">Total Quantity:</span>
+                                      <div className="font-semibold text-lg">{totalQtyOrdered}</div>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground">Dispatched:</span>
+                                      <div className="font-semibold text-lg text-primary">{totalQtyDispatched}</div>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground">SO Total:</span>
+                                      <div className="font-semibold text-lg text-primary">{formatCurrency(so.total)}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <h4 className="text-sm font-semibold mb-3">Line Items Details</h4>
+                                <div className="border rounded-lg overflow-hidden">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow className="bg-muted">
+                                        <TableHead className="font-semibold">Item #</TableHead>
+                                        <TableHead className="font-semibold">Particulars</TableHead>
+                                        <TableHead className="font-semibold text-right">SO Qty</TableHead>
+                                        <TableHead className="font-semibold text-right">Dispatched</TableHead>
+                                        <TableHead className="font-semibold text-right">Balance</TableHead>
+                                        <TableHead className="font-semibold text-right">Basic (₹)</TableHead>
+                                        <TableHead className="font-semibold text-right">GST %</TableHead>
+                                        <TableHead className="font-semibold text-right">GST (₹)</TableHead>
+                                        <TableHead className="font-semibold text-right">Total (₹)</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {so.lineItems.map((item, itemIndex) => (
+                                        <TableRow key={item.id}>
+                                          <TableCell className="font-medium">{itemIndex + 1}</TableCell>
+                                          <TableCell className="max-w-[300px]">{item.particulars}</TableCell>
+                                          <TableCell className="text-right">{item.soQty}</TableCell>
+                                          <TableCell className="text-right text-primary">{item.qtyDispatched}</TableCell>
+                                          <TableCell className="text-right font-semibold text-warning">
+                                            {item.balanceQty}
+                                          </TableCell>
+                                          <TableCell className="text-right">{formatCurrency(item.basicAmount)}</TableCell>
+                                          <TableCell className="text-right">{item.gstPercent}%</TableCell>
+                                          <TableCell className="text-right">{formatCurrency(item.gstAmount)}</TableCell>
+                                          <TableCell className="text-right font-semibold">{formatCurrency(item.lineTotal)}</TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </>
                     );
                   })
                 )}
