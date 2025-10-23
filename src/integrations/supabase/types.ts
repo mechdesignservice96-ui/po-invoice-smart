@@ -16,9 +16,13 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
+          account_name: string | null
+          account_number: string | null
+          bank_name: string | null
           company_logo_url: string | null
           created_at: string | null
           id: string
+          ifsc_code: string | null
           organization_address: string | null
           organization_email: string | null
           organization_gst_tin: string | null
@@ -26,11 +30,16 @@ export type Database = {
           organization_phone: string | null
           organization_website: string | null
           updated_at: string | null
+          upi_id: string | null
         }
         Insert: {
+          account_name?: string | null
+          account_number?: string | null
+          bank_name?: string | null
           company_logo_url?: string | null
           created_at?: string | null
           id: string
+          ifsc_code?: string | null
           organization_address?: string | null
           organization_email?: string | null
           organization_gst_tin?: string | null
@@ -38,11 +47,16 @@ export type Database = {
           organization_phone?: string | null
           organization_website?: string | null
           updated_at?: string | null
+          upi_id?: string | null
         }
         Update: {
+          account_name?: string | null
+          account_number?: string | null
+          bank_name?: string | null
           company_logo_url?: string | null
           created_at?: string | null
           id?: string
+          ifsc_code?: string | null
           organization_address?: string | null
           organization_email?: string | null
           organization_gst_tin?: string | null
@@ -50,6 +64,7 @@ export type Database = {
           organization_phone?: string | null
           organization_website?: string | null
           updated_at?: string | null
+          upi_id?: string | null
         }
         Relationships: []
       }

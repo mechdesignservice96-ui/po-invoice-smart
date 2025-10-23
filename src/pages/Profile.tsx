@@ -18,6 +18,11 @@ const profileSchema = z.object({
   organization_address: z.string().min(1, 'Address is required'),
   organization_gst_tin: z.string().min(1, 'GST-TIN Number is required'),
   organization_website: z.string().url('Invalid URL').optional().or(z.literal('')),
+  bank_name: z.string().optional().or(z.literal('')),
+  account_name: z.string().optional().or(z.literal('')),
+  account_number: z.string().optional().or(z.literal('')),
+  ifsc_code: z.string().optional().or(z.literal('')),
+  upi_id: z.string().optional().or(z.literal('')),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -64,6 +69,11 @@ const Profile = () => {
         setValue('organization_address', data.organization_address || '');
         setValue('organization_gst_tin', data.organization_gst_tin || '');
         setValue('organization_website', data.organization_website || '');
+        setValue('bank_name', data.bank_name || '');
+        setValue('account_name', data.account_name || '');
+        setValue('account_number', data.account_number || '');
+        setValue('ifsc_code', data.ifsc_code || '');
+        setValue('upi_id', data.upi_id || '');
         setLogoUrl(data.company_logo_url);
       }
     } catch (error) {
@@ -313,6 +323,72 @@ const Profile = () => {
                 {errors.organization_website && (
                   <p className="text-sm text-destructive">{errors.organization_website.message}</p>
                 )}
+              </div>
+            </div>
+
+            {/* Bank Details Section */}
+            <div className="space-y-4 pt-6 border-t">
+              <h3 className="text-lg font-semibold">Bank Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="bank_name">Bank Name</Label>
+                  <Input
+                    id="bank_name"
+                    {...register('bank_name')}
+                    placeholder="Enter bank name"
+                  />
+                  {errors.bank_name && (
+                    <p className="text-sm text-destructive">{errors.bank_name.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="account_name">Account Name</Label>
+                  <Input
+                    id="account_name"
+                    {...register('account_name')}
+                    placeholder="Enter account holder name"
+                  />
+                  {errors.account_name && (
+                    <p className="text-sm text-destructive">{errors.account_name.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="account_number">Account Number</Label>
+                  <Input
+                    id="account_number"
+                    {...register('account_number')}
+                    placeholder="Enter account number"
+                  />
+                  {errors.account_number && (
+                    <p className="text-sm text-destructive">{errors.account_number.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ifsc_code">IFSC Code</Label>
+                  <Input
+                    id="ifsc_code"
+                    {...register('ifsc_code')}
+                    placeholder="Enter IFSC code"
+                  />
+                  {errors.ifsc_code && (
+                    <p className="text-sm text-destructive">{errors.ifsc_code.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="upi_id">UPI ID</Label>
+                  <Input
+                    id="upi_id"
+                    {...register('upi_id')}
+                    placeholder="yourname@upi"
+                  />
+                  {errors.upi_id && (
+                    <p className="text-sm text-destructive">{errors.upi_id.message}</p>
+                  )}
+                </div>
               </div>
             </div>
 
