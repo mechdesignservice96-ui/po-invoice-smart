@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, AlertCircle, FileText, Download, Send, Plus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Search, AlertCircle, FileText, Download, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -60,7 +59,6 @@ const getStatusBadge = (status: 'Paid' | 'Partial' | 'Overdue') => {
 const Billing = () => {
   const { invoices, customers, saleOrders } = useApp();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewInvoicesDialog, setViewInvoicesDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerBilling | null>(null);
@@ -297,10 +295,6 @@ const Billing = () => {
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button onClick={() => navigate('/invoices')}>
-                <FileText className="mr-2 h-4 w-4" />
-                View All Invoices
-              </Button>
               <Button variant="outline" onClick={handleExport}>
                 <Download className="mr-2 h-4 w-4" />
                 Export to Excel

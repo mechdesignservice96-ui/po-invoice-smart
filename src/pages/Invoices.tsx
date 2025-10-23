@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Filter, Download, FileUp, Edit, Trash2, AlertCircle, ChevronDown, ChevronRight, X, Share2, CreditCard } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Plus, Search, Filter, Download, FileUp, Edit, Trash2, AlertCircle, ChevronDown, ChevronRight, X, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -65,7 +64,6 @@ const getStatusBadge = (status: InvoiceStatus) => {
 const Invoices = () => {
   const { invoices, deleteInvoice, addInvoice, vendors } = useApp();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -522,10 +520,6 @@ const Invoices = () => {
               <CardDescription>Track, Create, and Manage Purchase Order-Linked Invoices</CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button onClick={() => navigate('/billing')}>
-                <CreditCard className="mr-2 h-4 w-4" />
-                Customer Billing
-              </Button>
               <input
                 ref={fileInputRef}
                 type="file"
