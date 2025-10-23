@@ -393,15 +393,15 @@ const Billing = () => {
           <DialogHeader>
             <DialogTitle>Invoices for {selectedCustomer?.customerName}</DialogTitle>
             <DialogDescription>
-              All sale orders/invoices for this customer
+              All invoices for this customer
             </DialogDescription>
           </DialogHeader>
           <div className="mt-4">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>SO Number</TableHead>
-                  <TableHead>Date</TableHead>
+                  <TableHead>Invoice Number</TableHead>
+                  <TableHead>Invoice Date</TableHead>
                   <TableHead className="text-right">Amount (₹)</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
