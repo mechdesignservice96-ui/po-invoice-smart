@@ -8,7 +8,7 @@ const navItems = [
   { title: 'Dashboard', path: '/', icon: LayoutDashboard },
   { title: 'Sale Orders', path: '/sale-orders', icon: FileText },
   { title: 'Invoices', path: '/invoices', icon: Receipt },
-  { title: 'Vendors', path: '/vendors', icon: Users },
+  { title: 'Customers', path: '/customers', icon: Users },
   { title: 'Daily Expenses', path: '/expenses', icon: Wallet },
   { title: 'Reports', path: '/reports', icon: BarChart3 },
 ];
