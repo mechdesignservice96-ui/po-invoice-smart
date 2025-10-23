@@ -215,10 +215,9 @@ const Invoices = () => {
         'PO Date': '2025-01-20',
         'GST (%)': 18,
         'Transportation Cost (₹)': 1000,
+        'Discount (₹)': 500,
         'Particulars': 'Sample Item 1 - Product Description',
-        'PO Qty': 100,
         'Qty Dispatched': 100,
-        'Balance Qty': 0,
         'Basic Amount (₹)': 50000,
         'GST Amount (₹)': 9000,
         'Line Total (₹)': 59000,
@@ -237,10 +236,9 @@ const Invoices = () => {
         'PO Date': '',
         'GST (%)': '',
         'Transportation Cost (₹)': '',
+        'Discount (₹)': '',
         'Particulars': 'Sample Item 2 - Another Product',
-        'PO Qty': 50,
         'Qty Dispatched': 50,
-        'Balance Qty': 0,
         'Basic Amount (₹)': 50000,
         'GST Amount (₹)': 9000,
         'Line Total (₹)': 59000,
@@ -255,10 +253,10 @@ const Invoices = () => {
     const worksheet = XLSX.utils.json_to_sheet(templateData);
     
     const colWidths = [
-      { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 10 }, { wch: 20 },
-      { wch: 15 }, { wch: 12 }, { wch: 40 }, { wch: 10 }, { wch: 12 },
-      { wch: 12 }, { wch: 15 }, { wch: 8 }, { wch: 12 }, { wch: 15 },
-      { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 12 }
+      { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 20 },
+      { wch: 15 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 12 },
+      { wch: 40 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 12 },
+      { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 12 }
     ];
     worksheet['!cols'] = colWidths;
 
@@ -284,10 +282,9 @@ const Invoices = () => {
         'PO Date': itemIndex === 0 ? (inv.poDate ? formatDate(inv.poDate) : '') : '',
         'GST (%)': itemIndex === 0 ? inv.gstPercent : '',
         'Transportation Cost (₹)': itemIndex === 0 ? inv.transportationCost : '',
+        'Discount (₹)': itemIndex === 0 ? inv.discount : '',
         'Particulars': item.particulars,
-        'PO Qty': item.poQty,
         'Qty Dispatched': item.qtyDispatched,
-        'Balance Qty': item.balanceQty,
         'Basic Amount (₹)': item.basicAmount,
         'GST Amount (₹)': item.gstAmount,
         'Line Total (₹)': item.lineTotal,
@@ -303,10 +300,10 @@ const Invoices = () => {
     
     // Set column widths
     const colWidths = [
-      { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 10 }, { wch: 20 },
-      { wch: 15 }, { wch: 12 }, { wch: 40 }, { wch: 10 }, { wch: 12 },
-      { wch: 12 }, { wch: 15 }, { wch: 8 }, { wch: 12 }, { wch: 15 },
-      { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 12 }
+      { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 20 },
+      { wch: 15 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 12 },
+      { wch: 40 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 12 },
+      { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 12 }
     ];
     worksheet['!cols'] = colWidths;
 
@@ -381,6 +378,7 @@ const Invoices = () => {
 
             const gstPercent = Number(header['GST (%)']) || 18;
             const transportationCost = Number(header['Transportation Cost (₹)']) || 0;
+            const discount = Number(header['Discount (₹)']) || 0;
 
             const lineItems = invoice.lineItems.map((item: any, index: number) => {
               const basicAmount = Number(item['Basic Amount (₹)']) || 0;
@@ -390,9 +388,7 @@ const Invoices = () => {
               return {
                 id: `item-${Date.now()}-${index}`,
                 particulars: String(item['Particulars']),
-                poQty: Number(item['PO Qty']) || 0,
                 qtyDispatched: Number(item['Qty Dispatched']) || 0,
-                balanceQty: Number(item['Balance Qty']) || 0,
                 basicAmount,
                 gstAmount,
                 lineTotal,
@@ -400,7 +396,7 @@ const Invoices = () => {
             });
 
             const subtotal = lineItems.reduce((sum: number, item: any) => sum + item.lineTotal, 0);
-            const totalCost = subtotal + transportationCost;
+            const totalCost = subtotal + transportationCost - discount;
 
             const invoiceDate = new Date(header['Invoice Date']);
             const poDate = header['PO Date'] ? new Date(header['PO Date']) : undefined;
@@ -415,6 +411,7 @@ const Invoices = () => {
               lineItems,
               gstPercent,
               transportationCost,
+              discount,
               totalCost: Number(header['Total Cost (₹)']) || totalCost,
               amountReceived: Number(header['Amount Received (₹)']) || 0,
               pendingAmount: Number(header['Pending Amount (₹)']) || 0,
@@ -790,7 +787,7 @@ const Invoices = () => {
                             <div className="px-6 py-4">
                               <div className="mb-4 p-4 bg-background rounded-lg border">
                                 <h4 className="text-sm font-semibold mb-3">Invoice Summary</h4>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                                   <div>
                                     <span className="text-muted-foreground">GST Rate:</span>
                                     <div className="font-semibold text-lg">{inv.gstPercent}%</div>
@@ -802,6 +799,10 @@ const Invoices = () => {
                                   <div>
                                     <span className="text-muted-foreground">Transportation:</span>
                                     <div className="font-semibold text-lg">{formatCurrency(inv.transportationCost)}</div>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Discount:</span>
+                                    <div className="font-semibold text-lg text-green-600">{formatCurrency(inv.discount)}</div>
                                   </div>
                                   <div>
                                     <span className="text-muted-foreground">Invoice Total:</span>
@@ -817,9 +818,7 @@ const Invoices = () => {
                                     <TableRow className="bg-muted">
                                       <TableHead className="font-semibold">Item #</TableHead>
                                       <TableHead className="font-semibold">Particulars</TableHead>
-                                      <TableHead className="font-semibold text-right">PO Qty</TableHead>
                                       <TableHead className="font-semibold text-right">Dispatched</TableHead>
-                                      <TableHead className="font-semibold text-right">Balance</TableHead>
                                       <TableHead className="font-semibold text-right">Basic (₹)</TableHead>
                                     </TableRow>
                                   </TableHeader>
@@ -828,11 +827,7 @@ const Invoices = () => {
                                       <TableRow key={item.id}>
                                         <TableCell className="font-medium">{itemIndex + 1}</TableCell>
                                         <TableCell className="max-w-[300px]">{item.particulars}</TableCell>
-                                        <TableCell className="text-right">{item.poQty}</TableCell>
                                         <TableCell className="text-right">{item.qtyDispatched}</TableCell>
-                                        <TableCell className="text-right font-semibold">
-                                          {item.balanceQty}
-                                        </TableCell>
                                         <TableCell className="text-right">{formatCurrency(item.basicAmount)}</TableCell>
                                       </TableRow>
                                     ))}

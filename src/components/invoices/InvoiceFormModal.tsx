@@ -23,6 +23,7 @@ const invoiceHeaderSchema = z.object({
   poDate: z.string().optional(),
   gstPercent: z.number().min(0).max(100),
   transportationCost: z.number().min(0),
+  discount: z.number().min(0),
   amountReceived: z.number().min(0),
   dueDate: z.string().min(1, 'Due date is required'),
 });
@@ -57,6 +58,7 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
       poDate: '',
       gstPercent: 18,
       transportationCost: 0,
+      discount: 0,
       amountReceived: 0,
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     },
@@ -74,6 +76,7 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
       setValue('poDate', invoice.poDate ? new Date(invoice.poDate).toISOString().split('T')[0] : '');
       setValue('gstPercent', invoice.gstPercent || 18);
       setValue('transportationCost', invoice.transportationCost || 0);
+      setValue('discount', invoice.discount || 0);
       setValue('amountReceived', invoice.amountReceived);
       setValue('dueDate', new Date(invoice.dueDate).toISOString().split('T')[0]);
       setSelectedVendorId(invoice.vendorId);
@@ -89,9 +92,7 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
   const createEmptyLineItem = (): InvoiceLineItem => ({
     id: `temp-${Date.now()}-${Math.random()}`,
     particulars: '',
-    poQty: 0,
     qtyDispatched: 0,
-    balanceQty: 0,
     basicAmount: 0,
     gstAmount: 0,
     lineTotal: 0,
@@ -116,7 +117,6 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
     (item as any)[field] = value;
 
     // Calculate derived values
-    item.balanceQty = item.poQty - item.qtyDispatched;
     const gstPercent = watchedFields.gstPercent || 18;
     item.gstAmount = (item.basicAmount * gstPercent) / 100;
     item.lineTotal = item.basicAmount + item.gstAmount;
@@ -128,7 +128,8 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
   const calculateTotals = () => {
     const subtotal = lineItems.reduce((sum, item) => sum + item.lineTotal, 0);
     const transportationCost = watchedFields.transportationCost || 0;
-    const totalCost = subtotal + transportationCost;
+    const discount = watchedFields.discount || 0;
+    const totalCost = subtotal + transportationCost - discount;
     const pendingAmount = totalCost - (watchedFields.amountReceived || 0);
     return { totalCost, pendingAmount };
   };
@@ -159,6 +160,7 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
       lineItems: lineItems,
       gstPercent: data.gstPercent,
       transportationCost: data.transportationCost,
+      discount: data.discount,
       totalCost: totals.totalCost,
       amountReceived: data.amountReceived,
       pendingAmount: totals.pendingAmount,
@@ -348,6 +350,20 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
                     <p className="text-sm text-destructive">{errors.transportationCost.message}</p>
                   )}
                 </div>
+
+                {/* Discount */}
+                <div className="space-y-2">
+                  <Label htmlFor="discount">Discount (₹) *</Label>
+                  <Input
+                    id="discount"
+                    type="number"
+                    {...register('discount', { valueAsNumber: true })}
+                    placeholder="0"
+                  />
+                  {errors.discount && (
+                    <p className="text-sm text-destructive">{errors.discount.message}</p>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -391,18 +407,7 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {/* PO Qty */}
-                      <div className="space-y-2">
-                        <Label>PO Qty</Label>
-                        <Input
-                          type="number"
-                          value={item.poQty}
-                          onChange={(e) => updateLineItem(index, 'poQty', Number(e.target.value))}
-                          placeholder="0"
-                        />
-                      </div>
-
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {/* Qty Dispatched */}
                       <div className="space-y-2">
                         <Label>Dispatched</Label>
@@ -411,16 +416,6 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
                           value={item.qtyDispatched}
                           onChange={(e) => updateLineItem(index, 'qtyDispatched', Number(e.target.value))}
                           placeholder="0"
-                        />
-                      </div>
-
-                      {/* Balance Qty */}
-                      <div className="space-y-2">
-                        <Label>Balance</Label>
-                        <Input
-                          value={item.balanceQty}
-                          readOnly
-                          className="bg-muted font-semibold"
                         />
                       </div>
 
