@@ -153,35 +153,70 @@ export const ShareInvoiceModal = ({ open, onClose, invoice }: ShareInvoiceModalP
       
       yPos = Math.max(yPos, buyerYPos) + 8;
 
-      // Goods/Services Details Section
-      doc.setFontSize(10);
+      // PO Details Section with border box
+      if (invoice.poNumber) {
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.5);
+        const poBoxHeight = 8;
+        doc.rect(margin, yPos, pageWidth - 2 * margin, poBoxHeight);
+        
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text('PO Number:', margin + 2, yPos + 5.5);
+        doc.setFont('helvetica', 'normal');
+        doc.text(invoice.poNumber, margin + 25, yPos + 5.5);
+        
+        if (invoice.poDate) {
+          doc.setFont('helvetica', 'bold');
+          doc.text('PO Date:', margin + 80, yPos + 5.5);
+          doc.setFont('helvetica', 'normal');
+          doc.text(formatDate(invoice.poDate), margin + 100, yPos + 5.5);
+        }
+        
+        yPos += poBoxHeight + 10;
+      }
+
+      // Goods/Services Details Section with full border box
+      doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
       doc.text('Goods / Services Details:', margin, yPos);
-      yPos += 5;
-      doc.line(margin, yPos, pageWidth - margin, yPos);
       yPos += 8;
 
-      // Table Header
-      doc.setFillColor(240, 240, 240);
+      // Outer box for the entire table
       const tableStartY = yPos;
-      doc.rect(margin, yPos, pageWidth - 2 * margin, 8, 'F');
-      doc.setDrawColor(180, 180, 180);
-      doc.rect(margin, yPos, pageWidth - 2 * margin, 8);
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(1);
       
-      doc.setFontSize(8);
+      // Table Header with darker background
+      doc.setFillColor(220, 220, 220);
+      doc.rect(margin, yPos, pageWidth - 2 * margin, 10, 'FD');
+      
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.text('Description', margin + 2, yPos + 5);
-      doc.text('HSN/SAC', margin + 75, yPos + 5, { align: 'center' });
-      doc.text('Qty', margin + 100, yPos + 5, { align: 'center' });
-      doc.text('Unit Price', margin + 125, yPos + 5, { align: 'right' });
-      doc.text('Tax', margin + 150, yPos + 5, { align: 'center' });
-      doc.text('Total', pageWidth - margin - 2, yPos + 5, { align: 'right' });
+      doc.setTextColor(0, 0, 0);
       
-      yPos += 8;
+      // Column widths
+      const col1Width = 70;  // Description
+      const col2Width = 25;  // HSN/SAC
+      const col3Width = 20;  // Qty
+      const col4Width = 28;  // Unit Price
+      const col5Width = 25;  // Tax
+      const col6Width = 24;  // Total
+      
+      doc.text('Description', margin + 2, yPos + 6.5);
+      doc.text('HSN/SAC', margin + col1Width + 10, yPos + 6.5, { align: 'center' });
+      doc.text('Qty', margin + col1Width + col2Width + 12, yPos + 6.5, { align: 'center' });
+      doc.text('Unit Price', margin + col1Width + col2Width + col3Width + 20, yPos + 6.5, { align: 'right' });
+      doc.text('Tax', margin + col1Width + col2Width + col3Width + col4Width + 15, yPos + 6.5, { align: 'center' });
+      doc.text('Total', pageWidth - margin - 5, yPos + 6.5, { align: 'right' });
+      
+      yPos += 10;
 
-      // Line Items
+      // Line Items with clear borders
       doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
       let subtotal = 0;
+      const lineItemsStartY = yPos;
       
       (invoice.lineItems || []).forEach((item, index) => {
         if (yPos > pageHeight - 100) {
@@ -190,83 +225,128 @@ export const ShareInvoiceModal = ({ open, onClose, invoice }: ShareInvoiceModalP
         }
 
         const itemText = doc.splitTextToSize(item.particulars, 65);
-        const itemHeight = Math.max(itemText.length * 4.5, 8);
+        const itemHeight = Math.max(itemText.length * 5, 10);
         
-        // Alternating row colors
-        if (index % 2 === 0) {
-          doc.setFillColor(250, 250, 250);
-          doc.rect(margin, yPos, pageWidth - 2 * margin, itemHeight, 'F');
-        }
+        // White background for rows
+        doc.setFillColor(255, 255, 255);
+        doc.rect(margin, yPos, pageWidth - 2 * margin, itemHeight, 'F');
         
-        doc.setDrawColor(220, 220, 220);
-        doc.rect(margin, yPos, pageWidth - 2 * margin, itemHeight);
+        // Row borders
+        doc.setDrawColor(180, 180, 180);
+        doc.setLineWidth(0.3);
+        doc.line(margin, yPos + itemHeight, pageWidth - margin, yPos + itemHeight);
         
-        doc.setFontSize(8);
-        doc.text(itemText, margin + 2, yPos + 5);
+        // Vertical lines
+        doc.line(margin + col1Width, yPos, margin + col1Width, yPos + itemHeight);
+        doc.line(margin + col1Width + col2Width, yPos, margin + col1Width + col2Width, yPos + itemHeight);
+        doc.line(margin + col1Width + col2Width + col3Width, yPos, margin + col1Width + col2Width + col3Width, yPos + itemHeight);
+        doc.line(margin + col1Width + col2Width + col3Width + col4Width, yPos, margin + col1Width + col2Width + col3Width + col4Width, yPos + itemHeight);
+        doc.line(margin + col1Width + col2Width + col3Width + col4Width + col5Width, yPos, margin + col1Width + col2Width + col3Width + col4Width + col5Width, yPos + itemHeight);
         
-        const centerY = yPos + (itemHeight / 2) + 1;
-        doc.text('N/A', margin + 75, centerY, { align: 'center' });
-        doc.text(item.qtyDispatched.toString() + ' pcs', margin + 100, centerY, { align: 'center' });
+        doc.setFontSize(9);
+        doc.text(itemText, margin + 2, yPos + 6);
+        
+        const centerY = yPos + (itemHeight / 2) + 2;
+        doc.text('N/A', margin + col1Width + 12.5, centerY, { align: 'center' });
+        doc.text(item.qtyDispatched.toString() + ' pcs', margin + col1Width + col2Width + 10, centerY, { align: 'center' });
         
         const unitPrice = item.basicAmount / item.qtyDispatched;
-        doc.text('₹' + unitPrice.toFixed(2), margin + 125, centerY, { align: 'right' });
-        doc.text(invoice.gstPercent + '% GST', margin + 150, centerY, { align: 'center' });
-        doc.text('₹' + item.lineTotal.toFixed(2), pageWidth - margin - 2, centerY, { align: 'right' });
+        doc.setFont('helvetica', 'bold');
+        doc.text('₹ ' + unitPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), margin + col1Width + col2Width + col3Width + 26, centerY, { align: 'right' });
+        doc.setFont('helvetica', 'normal');
+        doc.text(invoice.gstPercent + '% GST', margin + col1Width + col2Width + col3Width + col4Width + 12.5, centerY, { align: 'center' });
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text('₹ ' + item.lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), pageWidth - margin - 5, centerY, { align: 'right' });
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
         
         subtotal += item.basicAmount;
         yPos += itemHeight;
       });
       
-      yPos += 5;
-      doc.line(margin, yPos, pageWidth - margin, yPos);
+      // Close the table with outer border
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(1);
+      doc.rect(margin, tableStartY, pageWidth - 2 * margin, yPos - tableStartY);
+      
       yPos += 10;
 
-      // Summary Section
-      doc.setFontSize(10);
+      // Summary Section with box
+      doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
       doc.text('Summary:', margin, yPos);
-      yPos += 5;
-      doc.setDrawColor(200, 200, 200);
-      doc.line(margin, yPos, pageWidth - margin, yPos);
       yPos += 8;
       
-      doc.setFontSize(9);
+      const summaryX = pageWidth - 85;
+      const summaryValueX = pageWidth - margin - 3;
+      const summaryBoxWidth = 80;
+      const summaryStartY = yPos;
+      
+      doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       
-      const summaryX = pageWidth - 80;
-      const summaryValueX = pageWidth - margin;
-      
       doc.text('Subtotal:', summaryX, yPos);
-      doc.text('₹' + subtotal.toFixed(2), summaryValueX, yPos, { align: 'right' });
-      yPos += 5;
+      doc.setFont('helvetica', 'bold');
+      doc.text('₹ ' + subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), summaryValueX, yPos, { align: 'right' });
+      yPos += 6;
       
+      doc.setFont('helvetica', 'normal');
       const totalTax = invoice.totalCost - subtotal - (invoice.transportationCost || 0);
       doc.text('Tax Amount (GST):', summaryX, yPos);
-      doc.text('₹' + totalTax.toFixed(2), summaryValueX, yPos, { align: 'right' });
-      yPos += 5;
+      doc.setFont('helvetica', 'bold');
+      doc.text('₹ ' + totalTax.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), summaryValueX, yPos, { align: 'right' });
+      yPos += 6;
       
       if (invoice.transportationCost && invoice.transportationCost > 0) {
-        doc.text('Transportation Cost:', summaryX, yPos);
-        doc.text('₹' + invoice.transportationCost.toFixed(2), summaryValueX, yPos, { align: 'right' });
-        yPos += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.text('Transportation:', summaryX, yPos);
+        doc.setFont('helvetica', 'bold');
+        doc.text('₹ ' + invoice.transportationCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), summaryValueX, yPos, { align: 'right' });
+        yPos += 6;
       }
       
+      doc.setFont('helvetica', 'normal');
       doc.text('Discounts:', summaryX, yPos);
-      doc.text('₹0.00', summaryValueX, yPos, { align: 'right' });
-      yPos += 5;
-      
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.text('Grand Total:', summaryX, yPos);
-      doc.text('₹' + invoice.totalCost.toFixed(2), summaryValueX, yPos, { align: 'right' });
-      yPos += 7;
+      doc.text('₹ 0.00', summaryValueX, yPos, { align: 'right' });
+      yPos += 8;
+      
+      // Divider line
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.5);
+      doc.line(summaryX - 2, yPos, pageWidth - margin, yPos);
+      yPos += 6;
+      
+      // Amount Due - highlighted
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Amount Due:', summaryX, yPos);
+      doc.setTextColor(220, 38, 38); // Red color for emphasis
+      doc.text('₹ ' + invoice.totalCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), summaryValueX, yPos, { align: 'right' });
+      doc.setTextColor(0, 0, 0); // Reset to black
+      yPos += 8;
+      
+      // Draw box around summary
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(1);
+      doc.rect(summaryX - 3, summaryStartY - 5, summaryBoxWidth, yPos - summaryStartY);
+      yPos += 2;
       
       // Amount in Words
       doc.setFont('helvetica', 'italic');
-      doc.setFontSize(8);
+      doc.setFontSize(9);
       const amountInWords = numberToWords(invoice.totalCost);
       doc.text('Amount in Words: ' + amountInWords, margin, yPos);
+      yPos += 12;
+      
+      // Thank you message
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Thank you for your business!', pageWidth / 2, yPos, { align: 'center' });
       yPos += 10;
+
 
       // Payment Details Section
       if (profile?.bank_name || profile?.upi_id) {
