@@ -10,6 +10,7 @@ import { Header } from "@/components/layout/Header";
 import Dashboard from "./pages/Dashboard";
 import SaleOrders from "./pages/SaleOrders";
 import Invoices from "./pages/Invoices";
+import Billing from "./pages/Billing";
 import Customers from "./pages/Customers";
 import DailyExpenses from "./pages/DailyExpenses";
 import Reports from "./pages/Reports";
@@ -54,6 +55,7 @@ const AppRoutes = () => {
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/sale-orders" element={<SaleOrders />} />
                     <Route path="/invoices" element={<Invoices />} />
+                    <Route path="/billing" element={<Billing />} />
                     <Route path="/customers" element={<Customers />} />
                     <Route path="/expenses" element={<DailyExpenses />} />
                     <Route path="/reports" element={<Reports />} />

@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, FileText, Receipt, Users, BarChart3, Wallet, UserCircle, LogOut } from 'lucide-react';
+import { LayoutDashboard, FileText, Receipt, Users, BarChart3, Wallet, UserCircle, LogOut, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ const navItems = [
   { title: 'Dashboard', path: '/', icon: LayoutDashboard },
   { title: 'Sale Orders', path: '/sale-orders', icon: FileText },
   { title: 'Invoices', path: '/invoices', icon: Receipt },
+  { title: 'Billing', path: '/billing', icon: CreditCard },
   { title: 'Customers', path: '/customers', icon: Users },
   { title: 'Daily Expenses', path: '/expenses', icon: Wallet },
   { title: 'Reports', path: '/reports', icon: BarChart3 },
