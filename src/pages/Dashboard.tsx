@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { InvoiceStatus } from '@/types';
-import { ChartContainer, ChartTooltipContent, ChartTooltip } from '@/components/ui/chart';
 
 const getStatusBadge = (status: InvoiceStatus) => {
   const variants: Record<InvoiceStatus, { variant: 'default' | 'success' | 'warning' | 'destructive'; label: string }> = {
@@ -20,7 +19,7 @@ const getStatusBadge = (status: InvoiceStatus) => {
 };
 
 const Dashboard = () => {
-  const { dashboardStats, invoices, saleOrders, expenses } = useApp();
+  const { dashboardStats, invoices, saleOrders } = useApp();
 
   // Get recent overdue invoices
   const overdueInvoices = invoices
@@ -46,47 +45,6 @@ const Dashboard = () => {
         'Paid Amount': paidAmount,
       };
     });
-  };
-
-  // Daily transactions data - last 14 days
-  const getDailyTransactionData = () => {
-    const days = 14;
-    const data = [];
-    const today = new Date();
-    
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      date.setHours(0, 0, 0, 0);
-      
-      const dateStr = date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
-      
-      // Calculate expenses for this day
-      const dailyExpenses = expenses
-        .filter(exp => {
-          const expDate = new Date(exp.date);
-          expDate.setHours(0, 0, 0, 0);
-          return expDate.getTime() === date.getTime();
-        })
-        .reduce((sum, exp) => sum + exp.amount, 0);
-      
-      // Calculate payments received for this day
-      const dailyPayments = invoices
-        .filter(inv => {
-          const invDate = new Date(inv.invoiceDate);
-          invDate.setHours(0, 0, 0, 0);
-          return invDate.getTime() === date.getTime() && inv.amountReceived > 0;
-        })
-        .reduce((sum, inv) => sum + inv.amountReceived, 0);
-      
-      data.push({
-        date: dateStr,
-        Expenses: dailyExpenses,
-        Payments: dailyPayments,
-      });
-    }
-    
-    return data;
   };
 
   return (
@@ -134,78 +92,6 @@ const Dashboard = () => {
           </CardHeader>
         </Card>
       )}
-
-      {/* Daily Transaction Chart */}
-      <Card className="animate-scale-in shadow-lg hover:shadow-xl transition-shadow">
-        <CardHeader className="bg-gradient-to-r from-primary/5 to-success/5 border-b">
-          <CardTitle className="text-xl font-bold">Daily Transactions (Last 14 Days)</CardTitle>
-          <CardDescription>Track daily expenses and payments received</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <ChartContainer
-            config={{
-              Expenses: {
-                label: 'Expenses',
-                color: 'hsl(0 84% 60%)',
-              },
-              Payments: {
-                label: 'Payments',
-                color: 'hsl(142 76% 36%)',
-              },
-            }}
-            className="h-[350px]"
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={getDailyTransactionData()} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(0 84% 60%)" stopOpacity={0.9} />
-                    <stop offset="100%" stopColor="hsl(0 84% 60%)" stopOpacity={0.6} />
-                  </linearGradient>
-                  <linearGradient id="colorPayments" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(142 76% 36%)" stopOpacity={0.9} />
-                    <stop offset="100%" stopColor="hsl(142 76% 36%)" stopOpacity={0.6} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" vertical={false} />
-                <XAxis 
-                  dataKey="date" 
-                  className="text-xs font-medium"
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                  stroke="hsl(var(--muted-foreground))"
-                />
-                <YAxis 
-                  className="text-xs font-medium"
-                  stroke="hsl(var(--muted-foreground))"
-                  tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
-                />
-                <ChartTooltip 
-                  content={<ChartTooltipContent formatter={(value: number) => formatCurrency(value)} />} 
-                  cursor={{ fill: 'hsl(var(--muted)/0.1)' }}
-                />
-                <Legend 
-                  wrapperStyle={{ paddingTop: '20px' }}
-                  iconType="circle"
-                />
-                <Bar 
-                  dataKey="Expenses" 
-                  fill="url(#colorExpenses)" 
-                  radius={[8, 8, 0, 0]} 
-                  maxBarSize={60}
-                />
-                <Bar 
-                  dataKey="Payments" 
-                  fill="url(#colorPayments)" 
-                  radius={[8, 8, 0, 0]} 
-                  maxBarSize={60}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        </CardContent>
-      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Chart */}
