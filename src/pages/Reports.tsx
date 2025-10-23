@@ -133,28 +133,36 @@ const Reports = () => {
 
   // Calculate daily expenses chart data
   const dailyExpensesData = useMemo(() => {
-    const startDate = getDateRange(expensePeriod);
-    const today = new Date();
+    const startDate = startOfDay(getDateRange(expensePeriod));
+    const today = startOfDay(new Date());
     
-    // Filter expenses within the date range
+    // Filter expenses within the date range (inclusive of today)
     const filteredExpenses = expenses.filter(expense => {
-      const expenseDate = new Date(expense.date);
-      return isAfter(expenseDate, startDate) && isBefore(expenseDate, today);
+      const expenseDate = startOfDay(new Date(expense.date));
+      return (expenseDate >= startDate && expenseDate <= today);
     });
 
     // Group expenses by date
-    const expensesByDate = new Map<string, number>();
+    const expensesByDate = new Map<string, { date: Date; amount: number }>();
     
     filteredExpenses.forEach(expense => {
-      const dateKey = format(new Date(expense.date), 'MMM dd');
-      expensesByDate.set(dateKey, (expensesByDate.get(dateKey) || 0) + expense.amount);
+      const expenseDate = startOfDay(new Date(expense.date));
+      const dateKey = format(expenseDate, 'MMM dd');
+      
+      if (!expensesByDate.has(dateKey)) {
+        expensesByDate.set(dateKey, { date: expenseDate, amount: 0 });
+      }
+      const current = expensesByDate.get(dateKey)!;
+      current.amount += expense.amount;
     });
 
-    // Convert to array and sort by date
-    const data = Array.from(expensesByDate.entries()).map(([date, amount]) => ({
-      date,
-      amount,
-    }));
+    // Convert to array and sort by date chronologically
+    const data = Array.from(expensesByDate.values())
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .map(({ date, amount }) => ({
+        date: format(date, 'MMM dd'),
+        amount,
+      }));
 
     // If no data, show a message-friendly empty array
     return data.length > 0 ? data : [];
@@ -162,16 +170,17 @@ const Reports = () => {
 
   // Calculate expense stats
   const expenseStats = useMemo(() => {
-    const startDate = getDateRange(expensePeriod);
-    const today = new Date();
+    const startDate = startOfDay(getDateRange(expensePeriod));
+    const today = startOfDay(new Date());
     
     const filteredExpenses = expenses.filter(expense => {
-      const expenseDate = new Date(expense.date);
-      return isAfter(expenseDate, startDate) && isBefore(expenseDate, today);
+      const expenseDate = startOfDay(new Date(expense.date));
+      return (expenseDate >= startDate && expenseDate <= today);
     });
 
     const totalExpense = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-    const avgDaily = filteredExpenses.length > 0 ? totalExpense / Math.max(dailyExpensesData.length, 1) : 0;
+    const uniqueDays = new Set(filteredExpenses.map(exp => format(startOfDay(new Date(exp.date)), 'yyyy-MM-dd'))).size;
+    const avgDaily = uniqueDays > 0 ? totalExpense / uniqueDays : 0;
     const paidCount = filteredExpenses.filter(exp => exp.status === 'Paid').length;
     const pendingCount = filteredExpenses.filter(exp => exp.status === 'Pending').length;
 
@@ -191,7 +200,7 @@ const Reports = () => {
       topCategory: topCategory ? topCategory[0] : 'N/A',
       topCategoryAmount: topCategory ? topCategory[1] : 0,
     };
-  }, [expenses, expensePeriod, dailyExpensesData.length]);
+  }, [expenses, expensePeriod]);
 
   // Custom tooltip for expenses
   const ExpenseTooltip = ({ active, payload, label }: any) => {
