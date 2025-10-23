@@ -441,6 +441,8 @@ const SaleOrders = () => {
                   <TableHead className="font-semibold">SO Number</TableHead>
                   <TableHead className="font-semibold">SO Date</TableHead>
                   <TableHead className="font-semibold">Customer</TableHead>
+                  <TableHead className="font-semibold">PO Number</TableHead>
+                  <TableHead className="font-semibold">PO Date</TableHead>
                   <TableHead className="font-semibold">Items</TableHead>
                   <TableHead className="font-semibold text-right">Qty Ordered</TableHead>
                   <TableHead className="font-semibold text-right">Qty Dispatched</TableHead>
@@ -453,7 +455,7 @@ const SaleOrders = () => {
               <TableBody>
                 {filteredSOs.length === 0 ? (
                 <TableRow>
-                    <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={13} className="text-center py-8 text-muted-foreground">
                       No sale orders found. Create your first SO to get started.
                     </TableCell>
                   </TableRow>
@@ -476,6 +478,12 @@ const SaleOrders = () => {
                               <span className="text-xs text-muted-foreground">{customer.phone}</span>
                             )}
                           </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {so.poNumber || '-'}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {so.poDate ? formatDate(so.poDate) : '-'}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">
