@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Plus, Search, Filter, FileDown, FileUp, Edit, Trash2, ExternalLink } from 'lucide-react';
+import { Plus, Search, Filter, FileDown, FileUp, Edit, Trash2, ExternalLink, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,7 +46,7 @@ const getStatusBadge = (status: SOStatus) => {
 };
 
 const SaleOrders = () => {
-  const { saleOrders, deleteSaleOrder, addSaleOrder, customers } = useApp();
+  const { saleOrders, deleteSaleOrder, addSaleOrder, customers, addInvoice, vendors } = useApp();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,6 +54,8 @@ const SaleOrders = () => {
   const [selectedSO, setSelectedSO] = useState<(typeof saleOrders)[0] | undefined>(undefined);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [soToDelete, setSOToDelete] = useState<string | null>(null);
+  const [createInvoiceDialogOpen, setCreateInvoiceDialogOpen] = useState(false);
+  const [soForInvoice, setSOForInvoice] = useState<(typeof saleOrders)[0] | null>(null);
 
   // Get customer info
   const getCustomerInfo = (customerId: string) => {
@@ -89,6 +91,60 @@ const SaleOrders = () => {
       setDeleteDialogOpen(false);
       setSOToDelete(null);
     }
+  };
+
+  const handleCreateInvoice = (so: (typeof saleOrders)[0]) => {
+    setSOForInvoice(so);
+    setCreateInvoiceDialogOpen(true);
+  };
+
+  const confirmCreateInvoice = () => {
+    if (!soForInvoice) return;
+
+    // Use the first vendor as default (in a real app, you'd select this)
+    const defaultVendor = vendors[0];
+    if (!defaultVendor) {
+      toast.error('Please add at least one vendor first');
+      return;
+    }
+
+    // Calculate due date (30 days from now)
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 30);
+
+    // Create invoice from SO with matching line items
+    addInvoice({
+      invoiceDate: new Date(),
+      vendorId: defaultVendor.id,
+      vendorName: defaultVendor.name,
+      poNumber: soForInvoice.poNumber,
+      poDate: soForInvoice.poDate,
+      lineItems: soForInvoice.lineItems.map(item => ({
+        id: `inv-${item.id}`,
+        particulars: item.particulars,
+        poQty: item.soQty,
+        qtyDispatched: item.qtyDispatched,
+        balanceQty: item.balanceQty,
+        basicAmount: item.basicAmount,
+        gstAmount: item.gstAmount,
+        lineTotal: item.lineTotal,
+      })),
+      gstPercent: soForInvoice.lineItems[0]?.gstPercent || 18,
+      transportationCost: 0,
+      totalCost: soForInvoice.total,
+      amountReceived: 0,
+      pendingAmount: soForInvoice.total,
+      status: 'Unpaid',
+      dueDate,
+      poId: soForInvoice.id,
+    });
+
+    toast.success(`Invoice created from ${soForInvoice.soNumber}`);
+    setCreateInvoiceDialogOpen(false);
+    setSOForInvoice(null);
+    
+    // Navigate to invoices page
+    navigate('/invoices');
   };
 
   const handleAddNew = () => {
@@ -385,74 +441,82 @@ const SaleOrders = () => {
                   <TableHead className="font-semibold">SO Number</TableHead>
                   <TableHead className="font-semibold">SO Date</TableHead>
                   <TableHead className="font-semibold">Customer</TableHead>
-                  <TableHead className="font-semibold">PO Number</TableHead>
-                  <TableHead className="font-semibold">PO Date</TableHead>
                   <TableHead className="font-semibold">Items</TableHead>
-                  <TableHead className="font-semibold text-right">Total</TableHead>
+                  <TableHead className="font-semibold text-right">Qty Ordered</TableHead>
+                  <TableHead className="font-semibold text-right">Qty Dispatched</TableHead>
+                  <TableHead className="font-semibold text-right">Balance</TableHead>
+                  <TableHead className="font-semibold text-right">Total Value</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="font-semibold">Actions</TableHead>
+                  <TableHead className="font-semibold text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredSOs.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                <TableRow>
+                    <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                       No sale orders found. Create your first SO to get started.
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredSOs.map((so, index) => {
                     const customer = getCustomerInfo(so.customerId);
+                    const totalQtyOrdered = so.lineItems.reduce((sum, item) => sum + item.soQty, 0);
+                    const totalQtyDispatched = so.lineItems.reduce((sum, item) => sum + item.qtyDispatched, 0);
+                    const totalBalance = so.lineItems.reduce((sum, item) => sum + item.balanceQty, 0);
+                    
                     return (
                       <TableRow key={so.id} className="hover:bg-muted/30 transition-colors">
                         <TableCell className="text-muted-foreground">{index + 1}</TableCell>
                         <TableCell className="font-medium text-primary">{so.soNumber}</TableCell>
                         <TableCell className="text-muted-foreground">{formatDate(so.soDate)}</TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span>{so.customerName}</span>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{so.customerName}</span>
                             {customer && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={() => {
-                                  toast.success(`Customer: ${customer.name}\nContact: ${customer.contactPerson}\nEmail: ${customer.email}\nPhone: ${customer.phone}`);
-                                }}
-                              >
-                                <ExternalLink className="w-3 h-3" />
-                              </Button>
+                              <span className="text-xs text-muted-foreground">{customer.phone}</span>
                             )}
                           </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{so.poNumber || '-'}</TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {so.poDate ? formatDate(so.poDate) : '-'}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">
                             {so.lineItems.length} item{so.lineItems.length !== 1 ? 's' : ''}
                           </Badge>
                         </TableCell>
+                        <TableCell className="text-right font-medium">{totalQtyOrdered}</TableCell>
+                        <TableCell className="text-right font-medium text-primary">{totalQtyDispatched}</TableCell>
+                        <TableCell className="text-right font-medium text-warning">
+                          {totalBalance > 0 ? totalBalance : '✓'}
+                        </TableCell>
                         <TableCell className="text-right font-semibold">
                           {formatCurrency(so.total)}
                         </TableCell>
                         <TableCell>{getStatusBadge(so.status)}</TableCell>
                         <TableCell>
-                          <div className="flex gap-2">
+                          <div className="flex gap-1 justify-center">
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => handleEdit(so)}
                               className="h-8 w-8"
+                              title="Edit SO"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
+                              onClick={() => handleCreateInvoice(so)}
+                              className="h-8 w-8 text-success hover:text-success"
+                              title="Create Invoice"
+                            >
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleDelete(so.id)}
                               className="h-8 w-8 text-destructive hover:text-destructive"
+                              title="Delete SO"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -483,6 +547,22 @@ const SaleOrders = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Create Invoice Confirmation Dialog */}
+      <AlertDialog open={createInvoiceDialogOpen} onOpenChange={setCreateInvoiceDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create Invoice from Sale Order</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will create a new invoice based on {soForInvoice?.soNumber}. The invoice will include all line items and quantities from the sale order.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCreateInvoice}>Create Invoice</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
