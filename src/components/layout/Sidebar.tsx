@@ -21,7 +21,7 @@ export const Sidebar = () => {
     <aside className="w-64 bg-sidebar text-sidebar-foreground h-screen flex flex-col fixed left-0 top-0 z-40">
       <div className="p-6 border-b border-sidebar-border">
         <h1 className="text-2xl font-bold text-sidebar-primary">Finance Suite</h1>
-        <p className="text-sm text-sidebar-foreground/70 mt-1">PO & Invoice Manager</p>
+        <p className="text-sm text-sidebar-foreground/70 mt-1">SO & Invoice Manager</p>
       </div>
 
       <nav className="flex-1 p-4 space-y-1">
