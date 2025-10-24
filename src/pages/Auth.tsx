@@ -101,7 +101,7 @@ const Auth = () => {
                   )}
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
                   {isSubmitting ? 'Signing in...' : 'Sign In'}
                 </Button>
               </form>
@@ -135,7 +135,7 @@ const Auth = () => {
                   )}
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
                   {isSubmitting ? 'Creating account...' : 'Sign Up'}
                 </Button>
               </form>

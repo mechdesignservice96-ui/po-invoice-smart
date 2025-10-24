@@ -519,7 +519,7 @@ const Invoices = () => {
               <CardTitle className="text-2xl">Invoices</CardTitle>
               <CardDescription>Track, Create, and Manage Purchase Order-Linked Invoices</CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -530,9 +530,10 @@ const Invoices = () => {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" className="gap-2" onClick={handleDownloadTemplate}>
+                    <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
                       <Download className="w-4 h-4" />
-                      Download Template
+                      <span className="hidden md:inline">Download Template</span>
+                      <span className="md:hidden">Template</span>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -543,9 +544,10 @@ const Invoices = () => {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" className="gap-2" onClick={handleImportClick}>
+                    <Button variant="outline" size="sm" onClick={handleImportClick}>
                       <FileUp className="w-4 h-4" />
-                      Import from Excel
+                      <span className="hidden md:inline">Import from Excel</span>
+                      <span className="md:hidden">Import</span>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -556,9 +558,10 @@ const Invoices = () => {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" className="gap-2" onClick={handleExportToExcel}>
+                    <Button variant="outline" size="sm" onClick={handleExportToExcel}>
                       <Download className="w-4 h-4" />
-                      Export to Excel
+                      <span className="hidden md:inline">Export to Excel</span>
+                      <span className="md:hidden">Export</span>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -566,12 +569,13 @@ const Invoices = () => {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <Button className="gap-2" onClick={() => {
+              <Button size="sm" onClick={() => {
                 setSelectedInvoice(null);
                 setIsModalOpen(true);
               }}>
                 <Plus className="w-4 h-4" />
-                New Invoice
+                <span className="hidden sm:inline">New Invoice</span>
+                <span className="sm:hidden">New</span>
               </Button>
             </div>
           </div>

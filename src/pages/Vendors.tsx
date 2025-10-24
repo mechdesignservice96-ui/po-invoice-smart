@@ -196,24 +196,25 @@ const Vendors = () => {
                 onChange={handleImportFromExcel}
                 className="hidden"
               />
-              <Button variant="outline" className="gap-2 w-full sm:w-auto" onClick={handleDownloadTemplate}>
+              <Button variant="outline" responsive size="sm" onClick={handleDownloadTemplate}>
                 <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Download Template</span>
-                <span className="sm:hidden">Template</span>
+                <span className="hidden md:inline">Download Template</span>
+                <span className="md:hidden">Template</span>
               </Button>
-              <Button variant="outline" className="gap-2 w-full sm:w-auto" onClick={handleImportClick}>
+              <Button variant="outline" responsive size="sm" onClick={handleImportClick}>
                 <FileUp className="w-4 h-4" />
-                <span className="hidden sm:inline">Import from Excel</span>
-                <span className="sm:hidden">Import</span>
+                <span className="hidden md:inline">Import from Excel</span>
+                <span className="md:hidden">Import</span>
               </Button>
-              <Button variant="outline" className="gap-2 w-full sm:w-auto" onClick={handleExportToExcel}>
+              <Button variant="outline" responsive size="sm" onClick={handleExportToExcel}>
                 <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Export to Excel</span>
-                <span className="sm:hidden">Export</span>
+                <span className="hidden md:inline">Export to Excel</span>
+                <span className="md:hidden">Export</span>
               </Button>
-              <Button className="gap-2 w-full sm:w-auto" onClick={() => setIsModalOpen(true)}>
+              <Button responsive size="sm" onClick={() => setIsModalOpen(true)}>
                 <Plus className="w-4 h-4" />
-                Add Vendor
+                <span className="hidden sm:inline">Add Vendor</span>
+                <span className="sm:hidden">Add</span>
               </Button>
             </div>
           </div>

@@ -279,7 +279,7 @@ const DailyExpenses = () => {
               <CardTitle>Expense Records</CardTitle>
               <CardDescription>View and manage all your business expenses</CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-wrap gap-2">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -287,24 +287,25 @@ const DailyExpenses = () => {
                 onChange={handleImportFromExcel}
                 className="hidden"
               />
-              <Button onClick={() => setIsModalOpen(true)} className="gap-2">
+              <Button size="sm" onClick={() => setIsModalOpen(true)}>
                 <Plus className="w-4 h-4" />
-                Add Expense
+                <span className="hidden sm:inline">Add Expense</span>
+                <span className="sm:hidden">Add</span>
               </Button>
-              <Button onClick={handleDownloadTemplate} variant="outline" className="gap-2">
+              <Button onClick={handleDownloadTemplate} variant="outline" size="sm">
                 <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Download Template</span>
-                <span className="sm:hidden">Template</span>
+                <span className="hidden md:inline">Download Template</span>
+                <span className="md:hidden">Template</span>
               </Button>
-              <Button onClick={handleImportClick} variant="outline" className="gap-2">
+              <Button onClick={handleImportClick} variant="outline" size="sm">
                 <FileUp className="w-4 h-4" />
-                <span className="hidden sm:inline">Import from Excel</span>
-                <span className="sm:hidden">Import</span>
+                <span className="hidden md:inline">Import from Excel</span>
+                <span className="md:hidden">Import</span>
               </Button>
-              <Button onClick={handleExport} variant="outline" className="gap-2">
+              <Button onClick={handleExport} variant="outline" size="sm">
                 <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Export to Excel</span>
-                <span className="sm:hidden">Export</span>
+                <span className="hidden md:inline">Export to Excel</span>
+                <span className="md:hidden">Export</span>
               </Button>
             </div>
           </div>

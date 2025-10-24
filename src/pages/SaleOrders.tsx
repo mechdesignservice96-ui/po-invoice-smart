@@ -397,7 +397,7 @@ const SaleOrders = () => {
               <CardTitle className="text-2xl">Sale Orders</CardTitle>
               <CardDescription>Manage and track all sale orders to customers</CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -405,21 +405,25 @@ const SaleOrders = () => {
                 onChange={handleImportFromExcel}
                 className="hidden"
               />
-              <Button variant="outline" className="gap-2" onClick={handleDownloadTemplate}>
+              <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
                 <FileDown className="w-4 h-4" />
-                Download Template
+                <span className="hidden md:inline">Download Template</span>
+                <span className="md:hidden">Template</span>
               </Button>
-              <Button variant="outline" className="gap-2" onClick={handleImportClick}>
+              <Button variant="outline" size="sm" onClick={handleImportClick}>
                 <FileUp className="w-4 h-4" />
-                Import from Excel
+                <span className="hidden md:inline">Import from Excel</span>
+                <span className="md:hidden">Import</span>
               </Button>
-              <Button variant="outline" className="gap-2" onClick={handleExportToExcel}>
+              <Button variant="outline" size="sm" onClick={handleExportToExcel}>
                 <FileDown className="w-4 h-4" />
-                Export to Excel
+                <span className="hidden md:inline">Export to Excel</span>
+                <span className="md:hidden">Export</span>
               </Button>
-              <Button className="gap-2" onClick={handleAddNew}>
+              <Button size="sm" onClick={handleAddNew}>
                 <Plus className="w-4 h-4" />
-                New SO
+                <span className="hidden sm:inline">New SO</span>
+                <span className="sm:hidden">New</span>
               </Button>
             </div>
           </div>
