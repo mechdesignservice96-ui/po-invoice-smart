@@ -275,8 +275,9 @@ export const ShareInvoiceModal = ({ open, onClose, invoice }: ShareInvoiceModalP
           addPageHeader();
         }
 
-        const descLines = doc.splitTextToSize(item.particulars, 75);
-        const rowHeight = Math.max(descLines.length * 4 + 6, 10);
+        // Properly split description to fit within column width (80 units)
+        const descLines = doc.splitTextToSize(item.particulars, 80);
+        const rowHeight = Math.max(descLines.length * 4 + 4, 9);
         
         if (index % 2 === 0) {
           doc.setFillColor(252, 252, 253);
@@ -289,9 +290,18 @@ export const ShareInvoiceModal = ({ open, onClose, invoice }: ShareInvoiceModalP
         
         const textY = yPos + (rowHeight / 2) + 1.5;
         
+        // Serial number
         doc.text((index + 1).toString(), colSN, textY);
+        
+        // Description - wrapped text starting from top
         doc.setTextColor(...darkGray);
-        doc.text(descLines, colDesc, yPos + 5);
+        doc.setFontSize(8.5);
+        descLines.forEach((line: string, lineIndex: number) => {
+          doc.text(line, colDesc, yPos + 4 + (lineIndex * 4));
+        });
+        
+        // Other columns - centered vertically
+        doc.setFontSize(9);
         doc.setTextColor(...textGray);
         doc.text('N/A', colHSN, textY);
         doc.text(item.qtyDispatched.toString(), colQty, textY);
@@ -423,13 +433,19 @@ export const ShareInvoiceModal = ({ open, onClose, invoice }: ShareInvoiceModalP
         doc.setFontSize(8);
         doc.setTextColor(...textGray);
         let bankY = yPos + 11;
-        doc.text('Account Name: ' + (profile?.organization_name || 'N/A'), margin + 3, bankY);
+        doc.text('Account Name: ' + (profile?.account_name || profile?.organization_name || 'Not Provided'), margin + 3, bankY);
         bankY += 4;
-        doc.text('Bank Name: Please Update', margin + 3, bankY);
+        doc.text('Bank Name: ' + (profile?.bank_name || 'Not Provided'), margin + 3, bankY);
         bankY += 4;
-        doc.text('Account No: Please Update', margin + 3, bankY);
+        doc.text('Account No: ' + (profile?.account_number || 'Not Provided'), margin + 3, bankY);
         bankY += 4;
-        doc.text('IFSC Code: Please Update', margin + 3, bankY);
+        doc.text('IFSC Code: ' + (profile?.ifsc_code || 'Not Provided'), margin + 3, bankY);
+        
+        // Add UPI ID if available
+        if (profile?.upi_id) {
+          bankY += 4;
+          doc.text('UPI ID: ' + profile.upi_id, margin + 3, bankY);
+        }
       }
 
       const termsX = margin + sectionWidth + margin;
