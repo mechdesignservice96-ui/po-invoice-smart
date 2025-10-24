@@ -444,9 +444,9 @@ const SaleOrders = () => {
 
           {/* Table */}
           <div className="border rounded-lg overflow-hidden">
-            <div className="max-h-[calc(100vh-36rem)] overflow-y-auto">
+            <div className="max-h-[calc(100vh-28rem)] overflow-y-auto">
               <Table>
-                <TableHeader className="sticky top-0 bg-background z-10">
+                <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                   <TableRow className="bg-muted/50">
                     <TableHead className="w-12"></TableHead>
                     <TableHead className="font-semibold">Sl. No</TableHead>
