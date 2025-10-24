@@ -1,11 +1,21 @@
-import { IndianRupee, TrendingUp, AlertTriangle, CheckCircle2, FileText, Clock } from 'lucide-react';
+import { IndianRupee, TrendingUp, AlertTriangle, CheckCircle2, FileText, Clock, Database } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useApp } from '@/contexts/AppContext';
 import { formatCurrency } from '@/utils/formatters';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { InvoiceStatus } from '@/types';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { 
+  sampleCustomers, 
+  sampleVendors, 
+  generateSampleSaleOrders, 
+  generateSampleInvoices, 
+  sampleExpenses 
+} from '@/utils/sampleData';
 
 const getStatusBadge = (status: InvoiceStatus) => {
   const variants: Record<InvoiceStatus, { variant: 'default' | 'success' | 'warning' | 'destructive'; label: string }> = {
@@ -19,7 +29,65 @@ const getStatusBadge = (status: InvoiceStatus) => {
 };
 
 const Dashboard = () => {
-  const { dashboardStats, invoices, saleOrders } = useApp();
+  const { 
+    dashboardStats, 
+    invoices, 
+    saleOrders, 
+    customers, 
+    vendors,
+    addCustomer,
+    addVendor,
+    addSaleOrder,
+    addInvoice,
+    addExpense
+  } = useApp();
+  const [isLoadingSample, setIsLoadingSample] = useState(false);
+
+  const hasNoData = customers.length === 0 && vendors.length === 0 && saleOrders.length === 0 && invoices.length === 0;
+
+  const handleLoadSampleData = async () => {
+    setIsLoadingSample(true);
+    try {
+      // Add customers
+      for (const customer of sampleCustomers) {
+        await addCustomer(customer);
+      }
+
+      // Add vendors
+      for (const vendor of sampleVendors) {
+        await addVendor(vendor);
+      }
+
+      // Wait for data to propagate
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Generate and add sale orders
+      const newCustomers = customers.length > 0 ? customers.slice(-4) : [];
+      const sampleSOs = generateSampleSaleOrders(newCustomers.length > 0 ? newCustomers : customers);
+      for (const so of sampleSOs) {
+        await addSaleOrder(so);
+      }
+
+      // Generate and add invoices
+      const newVendors = vendors.length > 0 ? vendors.slice(-3) : [];
+      const sampleInvs = generateSampleInvoices(newVendors.length > 0 ? newVendors : vendors);
+      for (const inv of sampleInvs) {
+        await addInvoice(inv);
+      }
+
+      // Add expenses
+      for (const expense of sampleExpenses) {
+        await addExpense(expense);
+      }
+
+      toast.success('Sample data loaded successfully! Added 4 customers, 3 vendors, 4 sale orders, 3 invoices, and 7 expenses.');
+    } catch (error) {
+      console.error('Error loading sample data:', error);
+      toast.error('Failed to load sample data');
+    } finally {
+      setIsLoadingSample(false);
+    }
+  };
 
   // Get recent overdue invoices
   const overdueInvoices = invoices
@@ -49,6 +117,37 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* No Data - Sample Data Card */}
+      {hasNoData && (
+        <Card className="border-primary/50 bg-primary/5 animate-scale-in">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-primary">
+              <Database className="w-5 h-5" />
+              Welcome to Finance Suite!
+            </CardTitle>
+            <CardDescription>
+              Get started by loading sample data to explore all features including customers, vendors, sale orders, invoices, and expenses.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={handleLoadSampleData}
+              disabled={isLoadingSample}
+              size="lg"
+            >
+              {isLoadingSample ? (
+                <>Loading Sample Data...</>
+              ) : (
+                <>
+                  <Database className="w-4 h-4 mr-2" />
+                  Load Sample Data
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
