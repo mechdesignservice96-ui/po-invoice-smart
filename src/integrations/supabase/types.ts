@@ -14,6 +14,167 @@ export type Database = {
   }
   public: {
     Tables: {
+      customers: {
+        Row: {
+          address: string
+          contact_person: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          payment_terms: number
+          phone: string
+          tax_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          contact_person: string
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          payment_terms?: number
+          phone: string
+          tax_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          contact_person?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          payment_terms?: number
+          phone?: string
+          tax_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount: number
+          attachment: string | null
+          category: string
+          created_at: string
+          date: string
+          description: string
+          id: string
+          payment_mode: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          attachment?: string | null
+          category: string
+          created_at?: string
+          date: string
+          description: string
+          id?: string
+          payment_mode: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          attachment?: string | null
+          category?: string
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          payment_mode?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      invoices: {
+        Row: {
+          amount_received: number
+          created_at: string
+          discount: number
+          due_date: string
+          gst_percent: number
+          id: string
+          invoice_date: string
+          invoice_number: string
+          line_items: Json
+          pending_amount: number
+          po_date: string | null
+          po_id: string | null
+          po_number: string | null
+          status: string
+          total_cost: number
+          transportation_cost: number
+          updated_at: string
+          user_id: string
+          vendor_id: string
+          vendor_name: string
+        }
+        Insert: {
+          amount_received?: number
+          created_at?: string
+          discount?: number
+          due_date: string
+          gst_percent?: number
+          id?: string
+          invoice_date: string
+          invoice_number: string
+          line_items?: Json
+          pending_amount?: number
+          po_date?: string | null
+          po_id?: string | null
+          po_number?: string | null
+          status?: string
+          total_cost?: number
+          transportation_cost?: number
+          updated_at?: string
+          user_id: string
+          vendor_id: string
+          vendor_name: string
+        }
+        Update: {
+          amount_received?: number
+          created_at?: string
+          discount?: number
+          due_date?: string
+          gst_percent?: number
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          line_items?: Json
+          pending_amount?: number
+          po_date?: string | null
+          po_id?: string | null
+          po_number?: string | null
+          status?: string
+          total_cost?: number
+          transportation_cost?: number
+          updated_at?: string
+          user_id?: string
+          vendor_id?: string
+          vendor_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_name: string | null
@@ -65,6 +226,104 @@ export type Database = {
           organization_website?: string | null
           updated_at?: string | null
           upi_id?: string | null
+        }
+        Relationships: []
+      }
+      sale_orders: {
+        Row: {
+          created_at: string
+          customer_id: string
+          customer_name: string
+          id: string
+          line_items: Json
+          notes: string | null
+          po_date: string | null
+          po_number: string | null
+          so_date: string
+          so_number: string
+          status: string
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          customer_name: string
+          id?: string
+          line_items?: Json
+          notes?: string | null
+          po_date?: string | null
+          po_number?: string | null
+          so_date: string
+          so_number: string
+          status?: string
+          total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          customer_name?: string
+          id?: string
+          line_items?: Json
+          notes?: string | null
+          po_date?: string | null
+          po_number?: string | null
+          so_date?: string
+          so_number?: string
+          status?: string
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendors: {
+        Row: {
+          contact_person: string
+          created_at: string
+          email: string
+          gst_tin: string
+          id: string
+          name: string
+          payment_terms: number
+          phone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contact_person: string
+          created_at?: string
+          email: string
+          gst_tin: string
+          id?: string
+          name: string
+          payment_terms?: number
+          phone: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contact_person?: string
+          created_at?: string
+          email?: string
+          gst_tin?: string
+          id?: string
+          name?: string
+          payment_terms?: number
+          phone?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

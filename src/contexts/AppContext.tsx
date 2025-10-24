@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Vendor, Customer, SaleOrder, Invoice, DashboardStats, Expense } from '@/types';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './AuthContext';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface AppContextType {
   vendors: Vendor[];
@@ -9,32 +12,25 @@ interface AppContextType {
   invoices: Invoice[];
   expenses: Expense[];
   dashboardStats: DashboardStats;
-  addVendor: (vendor: Omit<Vendor, 'id' | 'createdAt'>) => void;
-  updateVendor: (id: string, vendor: Partial<Vendor>) => void;
-  deleteVendor: (id: string) => void;
-  addCustomer: (customer: Omit<Customer, 'id' | 'createdAt'>) => void;
-  updateCustomer: (id: string, customer: Partial<Customer>) => void;
-  deleteCustomer: (id: string) => void;
-  addSaleOrder: (so: Omit<SaleOrder, 'id' | 'soNumber' | 'createdAt'>) => void;
-  updateSaleOrder: (id: string, so: Partial<SaleOrder>) => void;
-  deleteSaleOrder: (id: string) => void;
-  addInvoice: (invoice: Omit<Invoice, 'id' | 'invoiceNumber' | 'createdAt' | 'daysDelayed'>) => void;
-  updateInvoice: (id: string, invoice: Partial<Invoice>) => void;
-  deleteInvoice: (id: string) => void;
-  addExpense: (expense: Omit<Expense, 'id' | 'createdAt'>) => void;
-  updateExpense: (id: string, expense: Partial<Expense>) => void;
-  deleteExpense: (id: string) => void;
+  loading: boolean;
+  addVendor: (vendor: Omit<Vendor, 'id' | 'createdAt'>) => Promise<void>;
+  updateVendor: (id: string, vendor: Partial<Vendor>) => Promise<void>;
+  deleteVendor: (id: string) => Promise<void>;
+  addCustomer: (customer: Omit<Customer, 'id' | 'createdAt'>) => Promise<void>;
+  updateCustomer: (id: string, customer: Partial<Customer>) => Promise<void>;
+  deleteCustomer: (id: string) => Promise<void>;
+  addSaleOrder: (so: Omit<SaleOrder, 'id' | 'soNumber' | 'createdAt'>) => Promise<void>;
+  updateSaleOrder: (id: string, so: Partial<SaleOrder>) => Promise<void>;
+  deleteSaleOrder: (id: string) => Promise<void>;
+  addInvoice: (invoice: Omit<Invoice, 'id' | 'invoiceNumber' | 'createdAt' | 'daysDelayed'>) => Promise<void>;
+  updateInvoice: (id: string, invoice: Partial<Invoice>) => Promise<void>;
+  deleteInvoice: (id: string) => Promise<void>;
+  addExpense: (expense: Omit<Expense, 'id' | 'createdAt'>) => Promise<void>;
+  updateExpense: (id: string, expense: Partial<Expense>) => Promise<void>;
+  deleteExpense: (id: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
-
-const STORAGE_KEYS = {
-  VENDORS: 'finance_vendors',
-  CUSTOMERS: 'finance_customers',
-  SOS: 'finance_sos',
-  INVOICES: 'finance_invoices',
-  EXPENSES: 'finance_expenses',
-};
 
 // Helper function to calculate days delayed
 const calculateDaysDelayed = (dueDate: Date): number => {
@@ -57,887 +53,261 @@ const determineInvoiceStatus = (invoice: Invoice): Invoice['status'] => {
 };
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [saleOrders, setSaleOrders] = useState<SaleOrder[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Load data from localStorage on mount
-  useEffect(() => {
-    const loadedVendors = JSON.parse(localStorage.getItem(STORAGE_KEYS.VENDORS) || '[]');
-    const loadedCustomers = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOMERS) || '[]');
-    const loadedSOs = JSON.parse(localStorage.getItem(STORAGE_KEYS.SOS) || '[]');
-    const loadedInvoices = JSON.parse(localStorage.getItem(STORAGE_KEYS.INVOICES) || '[]');
-    const loadedExpenses = JSON.parse(localStorage.getItem(STORAGE_KEYS.EXPENSES) || '[]');
-
-    // Parse dates
-    const parseDates = (items: any[], dateFields: string[]) =>
-      items.map(item => {
-        const parsed = { ...item };
-        dateFields.forEach(field => {
-          if (parsed[field]) parsed[field] = new Date(parsed[field]);
-        });
-        return parsed;
-      });
-
-    // Migrate old invoice format to new lineItems format
-    const migrateInvoices = (invoices: any[]): Invoice[] => {
-      return invoices.map(inv => {
-        // Check if invoice has old format (direct particulars, poQty, etc.)
-        if (inv.particulars && !inv.lineItems) {
-          // Convert old format to new format
-          return {
-            ...inv,
-            lineItems: [
-              {
-                id: `item-${inv.id}-1`,
-                particulars: inv.particulars,
-                poQty: inv.poQty || 0,
-                qtyDispatched: inv.qtyDispatched || 0,
-                balanceQty: inv.balanceQty || 0,
-                basicAmount: inv.basicAmount || 0,
-                gstPercent: inv.gstPercent || 0,
-                gstAmount: inv.gstAmount || 0,
-                transportationCost: inv.transportationCost || 0,
-                lineTotal: inv.totalCost || 0,
-              },
-            ],
-            // Remove old fields
-            particulars: undefined,
-            poQty: undefined,
-            qtyDispatched: undefined,
-            balanceQty: undefined,
-            basicAmount: undefined,
-            gstPercent: undefined,
-            gstAmount: undefined,
-            transportationCost: undefined,
-          };
-        }
-        // Ensure lineItems exists
-        return {
-          ...inv,
-          lineItems: inv.lineItems || [],
-        };
-      });
-    };
-
-    // Migrate old SO format to new lineItems format
-    const migrateSaleOrders = (sos: any[]): SaleOrder[] => {
-      return sos.map(so => {
-        // Check if SO has old format (direct particulars, soQty, etc.)
-        if (so.particulars && !so.lineItems) {
-          // Convert old format to new format
-          return {
-            ...so,
-            lineItems: [
-              {
-                id: `item-${so.id}-1`,
-                particulars: so.particulars,
-                soQty: so.soQty || 0,
-                qtyDispatched: so.soQty - (so.balanceQty || 0),
-                balanceQty: so.balanceQty || 0,
-                basicAmount: so.basicAmount || 0,
-                gstPercent: so.gstPercent || 0,
-                gstAmount: so.gstAmount || 0,
-                lineTotal: so.basicAmount + so.gstAmount || 0,
-              },
-            ],
-            total: so.total || 0,
-            // Remove old fields  
-            particulars: undefined,
-            soQty: undefined,
-            basicAmount: undefined,
-            gstPercent: undefined,
-            gstAmount: undefined,
-            balanceQty: undefined,
-          };
-        }
-        // Ensure lineItems exists
-        return {
-          ...so,
-          lineItems: so.lineItems || [],
-        };
-      });
-    };
-
-    // Initialize with dummy data if empty
-    if (loadedVendors.length === 0) {
-      const dummyVendors: Vendor[] = [
-        {
-          id: 'V1',
-          name: 'Tech Solutions Ltd',
-          contactPerson: 'John Smith',
-          email: 'john@techsolutions.com',
-          phone: '+1-555-0101',
-          gstTin: 'GST-001',
-          paymentTerms: 30,
-          createdAt: new Date('2024-01-15'),
-        },
-        {
-          id: 'V2',
-          name: 'Office Supplies Co',
-          contactPerson: 'Sarah Johnson',
-          email: 'sarah@officesupplies.com',
-          phone: '+1-555-0102',
-          gstTin: 'GST-002',
-          paymentTerms: 15,
-          createdAt: new Date('2024-02-01'),
-        },
-        {
-          id: 'V3',
-          name: 'Cloud Services Inc',
-          contactPerson: 'Michael Chen',
-          email: 'michael@cloudservices.com',
-          phone: '+1-555-0103',
-          gstTin: 'GST-003',
-          paymentTerms: 30,
-          createdAt: new Date('2024-03-10'),
-        },
-      ];
-      localStorage.setItem(STORAGE_KEYS.VENDORS, JSON.stringify(dummyVendors));
-      setVendors(dummyVendors);
-
-      const dummyCustomers: Customer[] = [
-        {
-          id: 'C1',
-          name: 'Acme Corporation',
-          contactPerson: 'Robert Davis',
-          email: 'robert@acmecorp.com',
-          phone: '+1-555-0201',
-          taxId: 'CUST-TAX-001',
-          address: '123 Business St, Corporate City, CC 10001',
-          paymentTerms: 30,
-          createdAt: new Date('2024-01-10'),
-        },
-        {
-          id: 'C2',
-          name: 'Global Retailers Ltd',
-          contactPerson: 'Emily Wilson',
-          email: 'emily@globalretailers.com',
-          phone: '+1-555-0202',
-          taxId: 'CUST-TAX-002',
-          address: '456 Market Ave, Trade Town, TT 20002',
-          paymentTerms: 15,
-          createdAt: new Date('2024-02-15'),
-        },
-        {
-          id: 'C3',
-          name: 'TechWorld Systems',
-          contactPerson: 'David Kumar',
-          email: 'david@techworld.com',
-          phone: '+1-555-0203',
-          taxId: 'CUST-TAX-003',
-          address: '789 Innovation Blvd, Silicon Valley, SV 30003',
-          paymentTerms: 30,
-          createdAt: new Date('2024-03-20'),
-        },
-      ];
-      localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(dummyCustomers));
-      setCustomers(dummyCustomers);
-
-      const dummySOs: SaleOrder[] = [
-        {
-          id: 'SO1',
-          soNumber: 'SO-2025-001',
-          customerId: 'C1',
-          customerName: 'Acme Corporation',
-          soDate: new Date('2025-01-05'),
-          poNumber: 'PO-CUST-001',
-          poDate: new Date('2025-01-03'),
-          lineItems: [
-            {
-              id: 'so1-item1',
-              particulars: 'Enterprise Software License - Premium Package with 24/7 Support',
-              soQty: 100,
-              qtyDispatched: 60,
-              balanceQty: 40,
-              basicAmount: 500000,
-              gstPercent: 18,
-              gstAmount: 90000,
-              lineTotal: 590000,
-            },
-          ],
-          total: 590000,
-          status: 'Confirmed',
-          notes: 'Annual enterprise license for 100 users',
-          createdAt: new Date('2025-01-05'),
-        },
-        {
-          id: 'SO2',
-          soNumber: 'SO-2025-002',
-          customerId: 'C2',
-          customerName: 'Global Retailers Ltd',
-          soDate: new Date('2025-01-10'),
-          poNumber: 'PO-CUST-002',
-          poDate: new Date('2025-01-08'),
-          lineItems: [
-            {
-              id: 'so2-item1',
-              particulars: 'POS System Hardware - Terminal Bundle',
-              soQty: 30,
-              qtyDispatched: 30,
-              balanceQty: 0,
-              basicAmount: 90000,
-              gstPercent: 12,
-              gstAmount: 10800,
-              lineTotal: 100800,
-            },
-            {
-              id: 'so2-item2',
-              particulars: 'Scanner Package',
-              soQty: 20,
-              qtyDispatched: 20,
-              balanceQty: 0,
-              basicAmount: 60000,
-              gstPercent: 12,
-              gstAmount: 7200,
-              lineTotal: 67200,
-            },
-          ],
-          total: 168000,
-          status: 'Dispatched',
-          notes: 'POS hardware for retail stores',
-          createdAt: new Date('2025-01-10'),
-        },
-        {
-          id: 'SO3',
-          soNumber: 'SO-2025-003',
-          customerId: 'C3',
-          customerName: 'TechWorld Systems',
-          soDate: new Date('2024-12-20'),
-          lineItems: [
-            {
-              id: 'so3-item1',
-              particulars: 'Cloud Infrastructure Setup & Maintenance - Q1 2025',
-              soQty: 1,
-              qtyDispatched: 1,
-              balanceQty: 0,
-              basicAmount: 240000,
-              gstPercent: 18,
-              gstAmount: 43200,
-              lineTotal: 283200,
-            },
-          ],
-          total: 283200,
-          status: 'Delivered',
-          notes: 'Cloud infrastructure services Q1',
-          createdAt: new Date('2024-12-20'),
-        },
-        {
-          id: 'SO4',
-          soNumber: 'SO-2025-004',
-          customerId: 'C1',
-          customerName: 'Acme Corporation',
-          soDate: new Date('2025-01-12'),
-          poNumber: 'PO-CUST-003',
-          poDate: new Date('2025-01-10'),
-          lineItems: [
-            {
-              id: 'so4-item1',
-              particulars: 'Custom CRM Development - Phase 1 with Integration',
-              soQty: 1,
-              qtyDispatched: 1,
-              balanceQty: 0,
-              basicAmount: 350000,
-              gstPercent: 18,
-              gstAmount: 63000,
-              lineTotal: 413000,
-            },
-          ],
-          total: 413000,
-          status: 'Dispatched',
-          notes: 'CRM development project',
-          createdAt: new Date('2025-01-12'),
-        },
-        {
-          id: 'SO5',
-          soNumber: 'SO-2025-005',
-          customerId: 'C3',
-          customerName: 'TechWorld Systems',
-          soDate: new Date('2025-01-15'),
-          lineItems: [
-            {
-              id: 'so5-item1',
-              particulars: 'IT Consulting Services - Annual Retainer Package',
-              soQty: 12,
-              qtyDispatched: 2,
-              balanceQty: 10,
-              basicAmount: 960000,
-              gstPercent: 18,
-              gstAmount: 172800,
-              lineTotal: 1132800,
-            },
-          ],
-          total: 1132800,
-          status: 'Confirmed',
-          notes: 'Monthly consulting retainer',
-          createdAt: new Date('2025-01-15'),
-        },
-        {
-          id: 'SO6',
-          soNumber: 'SO-2025-006',
-          customerId: 'C2',
-          customerName: 'Global Retailers Ltd',
-          soDate: new Date('2025-01-18'),
-          poNumber: 'PO-CUST-004',
-          poDate: new Date('2025-01-16'),
-          lineItems: [
-            {
-              id: 'so6-item1',
-              particulars: 'E-commerce Platform Development - Customized Solution',
-              soQty: 1,
-              qtyDispatched: 0,
-              balanceQty: 1,
-              basicAmount: 780000,
-              gstPercent: 18,
-              gstAmount: 140400,
-              lineTotal: 920400,
-            },
-          ],
-          total: 920400,
-          status: 'Confirmed',
-          notes: 'Full-stack e-commerce development',
-          createdAt: new Date('2025-01-18'),
-        },
-        {
-          id: 'SO7',
-          soNumber: 'SO-2025-007',
-          customerId: 'C1',
-          customerName: 'Acme Corporation',
-          soDate: new Date('2025-01-20'),
-          lineItems: [
-            {
-              id: 'so7-item1',
-              particulars: 'Network Security Audit & Implementation Package',
-              soQty: 1,
-              qtyDispatched: 1,
-              balanceQty: 0,
-              basicAmount: 125000,
-              gstPercent: 18,
-              gstAmount: 22500,
-              lineTotal: 147500,
-            },
-          ],
-          total: 147500,
-          status: 'Completed',
-          notes: 'Security audit completed successfully',
-          createdAt: new Date('2025-01-20'),
-        },
-        {
-          id: 'SO8',
-          soNumber: 'SO-2025-008',
-          customerId: 'C3',
-          customerName: 'TechWorld Systems',
-          soDate: new Date('2024-12-15'),
-          lineItems: [
-            {
-              id: 'so8-item1',
-              particulars: 'Mobile App Development - iOS Native',
-              soQty: 1,
-              qtyDispatched: 1,
-              balanceQty: 0,
-              basicAmount: 275000,
-              gstPercent: 18,
-              gstAmount: 49500,
-              lineTotal: 324500,
-            },
-            {
-              id: 'so8-item2',
-              particulars: 'Mobile App Development - Android Native',
-              soQty: 1,
-              qtyDispatched: 1,
-              balanceQty: 0,
-              basicAmount: 275000,
-              gstPercent: 18,
-              gstAmount: 49500,
-              lineTotal: 324500,
-            },
-          ],
-          total: 649000,
-          status: 'Delivered',
-          notes: 'Both apps delivered and published',
-          createdAt: new Date('2024-12-15'),
-        },
-        {
-          id: 'SO9',
-          soNumber: 'SO-2025-009',
-          customerId: 'C2',
-          customerName: 'Global Retailers Ltd',
-          soDate: new Date('2025-01-08'),
-          lineItems: [
-            {
-              id: 'so9-item1',
-              particulars: 'Digital Marketing Services - Q1 2025 Campaign',
-              soQty: 3,
-              qtyDispatched: 1,
-              balanceQty: 2,
-              basicAmount: 180000,
-              gstPercent: 18,
-              gstAmount: 32400,
-              lineTotal: 212400,
-            },
-          ],
-          total: 212400,
-          status: 'Confirmed',
-          notes: 'Multi-channel marketing campaign',
-          createdAt: new Date('2025-01-08'),
-        },
-        {
-          id: 'SO10',
-          soNumber: 'SO-2025-010',
-          customerId: 'C1',
-          customerName: 'Acme Corporation',
-          soDate: new Date('2025-01-22'),
-          lineItems: [
-            {
-              id: 'so10-item1',
-              particulars: 'Data Analytics Dashboard - Custom BI Solution',
-              soQty: 1,
-              qtyDispatched: 0,
-              balanceQty: 1,
-              basicAmount: 420000,
-              gstPercent: 18,
-              gstAmount: 75600,
-              lineTotal: 495600,
-            },
-          ],
-          total: 495600,
-          status: 'Draft',
-          notes: 'Pending approval from management',
-          createdAt: new Date('2025-01-22'),
-        },
-      ];
-      localStorage.setItem(STORAGE_KEYS.SOS, JSON.stringify(dummySOs));
-      setSaleOrders(dummySOs);
-
-      const dummyInvoices: Invoice[] = [
-        {
-          id: 'INV1',
-          invoiceNumber: 'INV-2025-001',
-          invoiceDate: new Date('2025-01-15'),
-          vendorId: 'V1',
-          vendorName: 'Tech Solutions Ltd',
-          poNumber: 'PO-2025-001',
-          poDate: new Date('2025-01-05'),
-          lineItems: [
-            {
-              id: 'item1',
-              particulars: 'Dell Latitude 5420 Laptops - i7 11th Gen, 16GB RAM, 512GB SSD',
-              qtyDispatched: 60,
-              basicAmount: 250000,
-              gstAmount: 45000,
-              lineTotal: 295000,
-            },
-          ],
-          gstPercent: 18,
-          transportationCost: 5000,
-          discount: 0,
-          totalCost: 300000,
-          amountReceived: 150000,
-          pendingAmount: 150000,
-          status: 'Partial',
-          dueDate: new Date('2025-02-15'),
-          daysDelayed: 0,
-          poId: 'PO1',
-          createdAt: new Date('2025-01-15'),
-        },
-        {
-          id: 'INV2',
-          invoiceNumber: 'INV-2025-002',
-          invoiceDate: new Date('2025-01-12'),
-          vendorId: 'V2',
-          vendorName: 'Office Supplies Co',
-          poNumber: 'PO-2025-002',
-          poDate: new Date('2025-01-10'),
-          lineItems: [
-            {
-              id: 'item2-1',
-              particulars: 'Ergonomic Office Chairs - Premium Model',
-              qtyDispatched: 30,
-              basicAmount: 45000,
-              gstAmount: 5400,
-              lineTotal: 50400,
-            },
-            {
-              id: 'item2-2',
-              particulars: 'Adjustable Standing Desk Frames',
-              qtyDispatched: 20,
-              basicAmount: 30000,
-              gstAmount: 3600,
-              lineTotal: 33600,
-            },
-          ],
-          gstPercent: 12,
-          transportationCost: 2000,
-          discount: 0,
-          totalCost: 86000,
-          amountReceived: 0,
-          pendingAmount: 86000,
-          status: 'Overdue',
-          dueDate: new Date('2025-01-05'),
-          daysDelayed: 7,
-          poId: 'PO2',
-          createdAt: new Date('2025-01-12'),
-        },
-        {
-          id: 'INV3',
-          invoiceNumber: 'INV-2025-003',
-          invoiceDate: new Date('2024-12-28'),
-          vendorId: 'V3',
-          vendorName: 'Cloud Services Inc',
-          poNumber: 'PO-2025-003',
-          poDate: new Date('2024-12-20'),
-          lineItems: [
-            {
-              id: 'item3',
-              particulars: 'AWS Cloud Hosting - Q1 2025 Premium Package with 24/7 Support',
-              qtyDispatched: 1,
-              basicAmount: 120000,
-              gstAmount: 21600,
-              lineTotal: 141600,
-            },
-          ],
-          gstPercent: 18,
-          transportationCost: 0,
-          discount: 0,
-          totalCost: 141600,
-          amountReceived: 141600,
-          pendingAmount: 0,
-          status: 'Paid',
-          dueDate: new Date('2025-01-28'),
-          daysDelayed: 0,
-          poId: 'PO3',
-          createdAt: new Date('2024-12-28'),
-        },
-        {
-          id: 'INV4',
-          invoiceNumber: 'INV-2025-004',
-          invoiceDate: new Date('2025-01-18'),
-          vendorId: 'V1',
-          vendorName: 'Tech Solutions Ltd',
-          poNumber: 'PO-2025-004',
-          poDate: new Date('2025-01-12'),
-          lineItems: [
-            {
-              id: 'item4-1',
-              particulars: 'HP LaserJet Pro Printers',
-              qtyDispatched: 10,
-              basicAmount: 74000,
-              gstAmount: 13320,
-              lineTotal: 87320,
-            },
-            {
-              id: 'item4-2',
-              particulars: 'HP Toner Cartridges - High Yield',
-              qtyDispatched: 50,
-              basicAmount: 111000,
-              gstAmount: 19980,
-              lineTotal: 130980,
-            },
-          ],
-          gstPercent: 18,
-          transportationCost: 3500,
-          discount: 0,
-          totalCost: 221800,
-          amountReceived: 110900,
-          pendingAmount: 110900,
-          status: 'Partial',
-          dueDate: new Date('2025-02-18'),
-          daysDelayed: 0,
-          createdAt: new Date('2025-01-18'),
-        },
-      ];
-      localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(dummyInvoices));
-      setInvoices(dummyInvoices);
-
-      const dummyExpenses: Expense[] = [
-        // January 2025
-        {
-          id: 'EXP1',
-          date: new Date('2025-01-22'),
-          category: 'Travel',
-          description: 'Client meeting travel to Delhi',
-          amount: 12500,
-          paymentMode: 'Card',
-          status: 'Paid',
-          createdAt: new Date('2025-01-22'),
-        },
-        {
-          id: 'EXP2',
-          date: new Date('2025-01-21'),
-          category: 'Supplies',
-          description: 'Office supplies and stationery',
-          amount: 5600,
-          paymentMode: 'UPI',
-          status: 'Paid',
-          createdAt: new Date('2025-01-21'),
-        },
-        {
-          id: 'EXP3',
-          date: new Date('2025-01-20'),
-          category: 'Utilities',
-          description: 'Internet and phone bills',
-          amount: 8900,
-          paymentMode: 'Bank Transfer',
-          status: 'Paid',
-          createdAt: new Date('2025-01-20'),
-        },
-        {
-          id: 'EXP4',
-          date: new Date('2025-01-19'),
-          category: 'Misc',
-          description: 'Team building event',
-          amount: 18000,
-          paymentMode: 'Card',
-          status: 'Paid',
-          createdAt: new Date('2025-01-19'),
-        },
-        {
-          id: 'EXP5',
-          date: new Date('2025-01-18'),
-          category: 'Rent',
-          description: 'Office rent for January 2025',
-          amount: 50000,
-          paymentMode: 'Bank Transfer',
-          status: 'Paid',
-          createdAt: new Date('2025-01-18'),
-        },
-        {
-          id: 'EXP6',
-          date: new Date('2025-01-17'),
-          category: 'Travel',
-          description: 'Local transportation',
-          amount: 3200,
-          paymentMode: 'Cash',
-          status: 'Paid',
-          createdAt: new Date('2025-01-17'),
-        },
-        {
-          id: 'EXP7',
-          date: new Date('2025-01-16'),
-          category: 'Supplies',
-          description: 'Printer toner and paper',
-          amount: 4500,
-          paymentMode: 'UPI',
-          status: 'Paid',
-          createdAt: new Date('2025-01-16'),
-        },
-        {
-          id: 'EXP8',
-          date: new Date('2025-01-15'),
-          category: 'Utilities',
-          description: 'Electricity bill',
-          amount: 12000,
-          paymentMode: 'Bank Transfer',
-          status: 'Paid',
-          createdAt: new Date('2025-01-15'),
-        },
-        {
-          id: 'EXP9',
-          date: new Date('2025-01-14'),
-          category: 'Misc',
-          description: 'Office refreshments',
-          amount: 2800,
-          paymentMode: 'Cash',
-          status: 'Paid',
-          createdAt: new Date('2025-01-14'),
-        },
-        {
-          id: 'EXP10',
-          date: new Date('2025-01-13'),
-          category: 'Travel',
-          description: 'Client site visit - Pune',
-          amount: 9800,
-          paymentMode: 'Card',
-          status: 'Paid',
-          createdAt: new Date('2025-01-13'),
-        },
-        {
-          id: 'EXP11',
-          date: new Date('2025-01-12'),
-          category: 'Supplies',
-          description: 'Cleaning supplies',
-          amount: 1800,
-          paymentMode: 'Cash',
-          status: 'Paid',
-          createdAt: new Date('2025-01-12'),
-        },
-        {
-          id: 'EXP12',
-          date: new Date('2025-01-11'),
-          category: 'Utilities',
-          description: 'Water bill',
-          amount: 1500,
-          paymentMode: 'UPI',
-          status: 'Paid',
-          createdAt: new Date('2025-01-11'),
-        },
-        {
-          id: 'EXP13',
-          date: new Date('2025-01-10'),
-          category: 'Misc',
-          description: 'Team lunch',
-          amount: 6500,
-          paymentMode: 'Card',
-          status: 'Paid',
-          createdAt: new Date('2025-01-10'),
-        },
-        {
-          id: 'EXP14',
-          date: new Date('2025-01-09'),
-          category: 'Travel',
-          description: 'Taxi and fuel expenses',
-          amount: 4200,
-          paymentMode: 'Cash',
-          status: 'Paid',
-          createdAt: new Date('2025-01-09'),
-        },
-        {
-          id: 'EXP15',
-          date: new Date('2025-01-08'),
-          category: 'Supplies',
-          description: 'Office furniture repair',
-          amount: 3500,
-          paymentMode: 'UPI',
-          status: 'Paid',
-          createdAt: new Date('2025-01-08'),
-        },
-        // December 2024
-        {
-          id: 'EXP16',
-          date: new Date('2024-12-28'),
-          category: 'Rent',
-          description: 'Office rent for December 2024',
-          amount: 50000,
-          paymentMode: 'Bank Transfer',
-          status: 'Paid',
-          createdAt: new Date('2024-12-28'),
-        },
-        {
-          id: 'EXP17',
-          date: new Date('2024-12-25'),
-          category: 'Misc',
-          description: 'Holiday celebration',
-          amount: 15000,
-          paymentMode: 'Card',
-          status: 'Paid',
-          createdAt: new Date('2024-12-25'),
-        },
-        {
-          id: 'EXP18',
-          date: new Date('2024-12-20'),
-          category: 'Travel',
-          description: 'Business trip to Bangalore',
-          amount: 18500,
-          paymentMode: 'Card',
-          status: 'Paid',
-          createdAt: new Date('2024-12-20'),
-        },
-        {
-          id: 'EXP19',
-          date: new Date('2024-12-15'),
-          category: 'Utilities',
-          description: 'Electricity and water bills',
-          amount: 13500,
-          paymentMode: 'Bank Transfer',
-          status: 'Paid',
-          createdAt: new Date('2024-12-15'),
-        },
-        {
-          id: 'EXP20',
-          date: new Date('2024-12-10'),
-          category: 'Supplies',
-          description: 'Office equipment maintenance',
-          amount: 7200,
-          paymentMode: 'UPI',
-          status: 'Paid',
-          createdAt: new Date('2024-12-10'),
-        },
-        {
-          id: 'EXP21',
-          date: new Date('2024-12-05'),
-          category: 'Travel',
-          description: 'Local client meetings',
-          amount: 3800,
-          paymentMode: 'Cash',
-          status: 'Paid',
-          createdAt: new Date('2024-12-05'),
-        },
-        {
-          id: 'EXP22',
-          date: new Date('2024-12-01'),
-          category: 'Misc',
-          description: 'Software subscriptions',
-          amount: 12000,
-          paymentMode: 'Card',
-          status: 'Paid',
-          createdAt: new Date('2024-12-01'),
-        },
-        // November 2024
-        {
-          id: 'EXP23',
-          date: new Date('2024-11-28'),
-          category: 'Rent',
-          description: 'Office rent for November 2024',
-          amount: 50000,
-          paymentMode: 'Bank Transfer',
-          status: 'Paid',
-          createdAt: new Date('2024-11-28'),
-        },
-        {
-          id: 'EXP24',
-          date: new Date('2024-11-20'),
-          category: 'Travel',
-          description: 'Conference attendance',
-          amount: 25000,
-          paymentMode: 'Card',
-          status: 'Paid',
-          createdAt: new Date('2024-11-20'),
-        },
-        {
-          id: 'EXP25',
-          date: new Date('2024-11-15'),
-          category: 'Utilities',
-          description: 'Monthly utility bills',
-          amount: 11000,
-          paymentMode: 'Bank Transfer',
-          status: 'Paid',
-          createdAt: new Date('2024-11-15'),
-        },
-      ];
-      localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(dummyExpenses));
-      setExpenses(dummyExpenses);
-    } else {
-      setVendors(parseDates(loadedVendors, ['createdAt']));
-      setCustomers(parseDates(loadedCustomers, ['createdAt']));
-      setSaleOrders(parseDates(migrateSaleOrders(loadedSOs), ['soDate', 'createdAt', 'poDate']));
-      const migratedInvoices = migrateInvoices(loadedInvoices);
-      setInvoices(parseDates(migratedInvoices, ['invoiceDate', 'dueDate', 'createdAt', 'poDate']));
-      setExpenses(parseDates(loadedExpenses, ['date', 'createdAt']));
+  // Fetch data from Supabase
+  const fetchData = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
     }
-  }, []);
 
-  // Save to localStorage whenever data changes
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.VENDORS, JSON.stringify(vendors));
-  }, [vendors]);
+    try {
+      setLoading(true);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(customers));
-  }, [customers]);
+      // Fetch vendors
+      const { data: vendorsData, error: vendorsError } = await supabase
+        .from('vendors')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.SOS, JSON.stringify(saleOrders));
-  }, [saleOrders]);
+      if (vendorsError) throw vendorsError;
+      setVendors(
+        (vendorsData || []).map((v: any) => ({
+          id: v.id,
+          name: v.name,
+          contactPerson: v.contact_person,
+          email: v.email,
+          phone: v.phone,
+          gstTin: v.gst_tin,
+          paymentTerms: v.payment_terms,
+          createdAt: new Date(v.created_at),
+        }))
+      );
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(invoices));
-  }, [invoices]);
+      // Fetch customers
+      const { data: customersData, error: customersError } = await supabase
+        .from('customers')
+        .select('*')
+        .order('created_at', { ascending: false });
 
+      if (customersError) throw customersError;
+      setCustomers(
+        (customersData || []).map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          contactPerson: c.contact_person,
+          email: c.email,
+          phone: c.phone,
+          taxId: c.tax_id,
+          address: c.address,
+          paymentTerms: c.payment_terms,
+          createdAt: new Date(c.created_at),
+        }))
+      );
+
+      // Fetch sale orders
+      const { data: sosData, error: sosError } = await supabase
+        .from('sale_orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (sosError) throw sosError;
+      setSaleOrders(
+        (sosData || []).map((so: any) => ({
+          id: so.id,
+          soNumber: so.so_number,
+          customerId: so.customer_id,
+          customerName: so.customer_name,
+          soDate: new Date(so.so_date),
+          poNumber: so.po_number,
+          poDate: so.po_date ? new Date(so.po_date) : undefined,
+          lineItems: so.line_items || [],
+          total: parseFloat(so.total),
+          status: so.status,
+          notes: so.notes,
+          createdAt: new Date(so.created_at),
+        }))
+      );
+
+      // Fetch invoices
+      const { data: invoicesData, error: invoicesError } = await supabase
+        .from('invoices')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (invoicesError) throw invoicesError;
+      setInvoices(
+        (invoicesData || []).map((inv: any) => ({
+          id: inv.id,
+          invoiceNumber: inv.invoice_number,
+          invoiceDate: new Date(inv.invoice_date),
+          vendorId: inv.vendor_id,
+          vendorName: inv.vendor_name,
+          poNumber: inv.po_number,
+          poDate: inv.po_date ? new Date(inv.po_date) : undefined,
+          lineItems: inv.line_items || [],
+          gstPercent: parseFloat(inv.gst_percent),
+          transportationCost: parseFloat(inv.transportation_cost),
+          discount: parseFloat(inv.discount),
+          totalCost: parseFloat(inv.total_cost),
+          amountReceived: parseFloat(inv.amount_received),
+          pendingAmount: parseFloat(inv.pending_amount),
+          status: inv.status,
+          dueDate: new Date(inv.due_date),
+          daysDelayed: calculateDaysDelayed(new Date(inv.due_date)),
+          poId: inv.po_id,
+          createdAt: new Date(inv.created_at),
+        }))
+      );
+
+      // Fetch expenses
+      const { data: expensesData, error: expensesError } = await supabase
+        .from('expenses')
+        .select('*')
+        .order('created_at', { ascending: false});
+
+      if (expensesError) throw expensesError;
+      setExpenses(
+        (expensesData || []).map((exp: any) => ({
+          id: exp.id,
+          date: new Date(exp.date),
+          category: exp.category,
+          description: exp.description,
+          amount: parseFloat(exp.amount),
+          paymentMode: exp.payment_mode,
+          status: exp.status,
+          attachment: exp.attachment,
+          createdAt: new Date(exp.created_at),
+        }))
+      );
+    } catch (error: any) {
+      console.error('Error fetching data:', error);
+      toast.error('Failed to load data: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial data fetch
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
-  }, [expenses]);
+    fetchData();
+  }, [user]);
+
+  // Setup real-time subscriptions
+  useEffect(() => {
+    if (!user) return;
+
+    const channels: RealtimeChannel[] = [];
+
+    // Vendors real-time subscription
+    const vendorsChannel = supabase
+      .channel('vendors-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'vendors',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Vendors change:', payload);
+          fetchData(); // Refetch all data on any change
+        }
+      )
+      .subscribe();
+    channels.push(vendorsChannel);
+
+    // Customers real-time subscription
+    const customersChannel = supabase
+      .channel('customers-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'customers',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Customers change:', payload);
+          fetchData();
+        }
+      )
+      .subscribe();
+    channels.push(customersChannel);
+
+    // Sale Orders real-time subscription
+    const sosChannel = supabase
+      .channel('sale_orders-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sale_orders',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Sale Orders change:', payload);
+          fetchData();
+        }
+      )
+      .subscribe();
+    channels.push(sosChannel);
+
+    // Invoices real-time subscription
+    const invoicesChannel = supabase
+      .channel('invoices-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'invoices',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Invoices change:', payload);
+          fetchData();
+        }
+      )
+      .subscribe();
+    channels.push(invoicesChannel);
+
+    // Expenses real-time subscription
+    const expensesChannel = supabase
+      .channel('expenses-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'expenses',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Expenses change:', payload);
+          fetchData();
+        }
+      )
+      .subscribe();
+    channels.push(expensesChannel);
+
+    // Cleanup subscriptions
+    return () => {
+      channels.forEach((channel) => {
+        supabase.removeChannel(channel);
+      });
+    };
+  }, [user]);
 
   // Calculate dashboard stats
   const dashboardStats: DashboardStats = {
@@ -945,129 +315,330 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     totalInvoiced: invoices.reduce((sum, inv) => sum + inv.totalCost, 0),
     totalPaid: invoices.reduce((sum, inv) => sum + inv.amountReceived, 0),
     totalOutstanding: invoices.reduce((sum, inv) => sum + inv.pendingAmount, 0),
-    overdueCount: invoices.filter(inv => inv.status === 'Overdue').length,
+    overdueCount: invoices.filter((inv) => inv.status === 'Overdue').length,
     overdueAmount: invoices
-      .filter(inv => inv.status === 'Overdue')
+      .filter((inv) => inv.status === 'Overdue')
       .reduce((sum, inv) => sum + inv.pendingAmount, 0),
   };
 
-  const addVendor = (vendor: Omit<Vendor, 'id' | 'createdAt'>) => {
-    const newVendor: Vendor = {
-      ...vendor,
-      id: `V${Date.now()}`,
-      createdAt: new Date(),
-    };
-    setVendors([...vendors, newVendor]);
-    toast.success('Vendor added successfully');
+  // CRUD operations for vendors
+  const addVendor = async (vendor: Omit<Vendor, 'id' | 'createdAt'>) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase.from('vendors').insert({
+        user_id: user.id,
+        name: vendor.name,
+        contact_person: vendor.contactPerson,
+        email: vendor.email,
+        phone: vendor.phone,
+        gst_tin: vendor.gstTin,
+        payment_terms: vendor.paymentTerms,
+      });
+
+      if (error) throw error;
+      toast.success('Vendor added successfully');
+    } catch (error: any) {
+      console.error('Error adding vendor:', error);
+      toast.error('Failed to add vendor: ' + error.message);
+    }
   };
 
-  const updateVendor = (id: string, vendor: Partial<Vendor>) => {
-    setVendors(vendors.map(v => (v.id === id ? { ...v, ...vendor } : v)));
-    toast.success('Vendor updated successfully');
+  const updateVendor = async (id: string, vendor: Partial<Vendor>) => {
+    try {
+      const updateData: any = {};
+      if (vendor.name) updateData.name = vendor.name;
+      if (vendor.contactPerson) updateData.contact_person = vendor.contactPerson;
+      if (vendor.email) updateData.email = vendor.email;
+      if (vendor.phone) updateData.phone = vendor.phone;
+      if (vendor.gstTin) updateData.gst_tin = vendor.gstTin;
+      if (vendor.paymentTerms !== undefined) updateData.payment_terms = vendor.paymentTerms;
+
+      const { error } = await supabase.from('vendors').update(updateData).eq('id', id);
+
+      if (error) throw error;
+      toast.success('Vendor updated successfully');
+    } catch (error: any) {
+      console.error('Error updating vendor:', error);
+      toast.error('Failed to update vendor: ' + error.message);
+    }
   };
 
-  const deleteVendor = (id: string) => {
-    setVendors(vendors.filter(v => v.id !== id));
-    toast.success('Vendor deleted successfully');
+  const deleteVendor = async (id: string) => {
+    try {
+      const { error } = await supabase.from('vendors').delete().eq('id', id);
+
+      if (error) throw error;
+      toast.success('Vendor deleted successfully');
+    } catch (error: any) {
+      console.error('Error deleting vendor:', error);
+      toast.error('Failed to delete vendor: ' + error.message);
+    }
   };
 
-  const addCustomer = (customer: Omit<Customer, 'id' | 'createdAt'>) => {
-    const newCustomer: Customer = {
-      ...customer,
-      id: `C${Date.now()}`,
-      createdAt: new Date(),
-    };
-    setCustomers([...customers, newCustomer]);
-    toast.success('Customer added successfully');
+  // CRUD operations for customers
+  const addCustomer = async (customer: Omit<Customer, 'id' | 'createdAt'>) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase.from('customers').insert({
+        user_id: user.id,
+        name: customer.name,
+        contact_person: customer.contactPerson,
+        email: customer.email,
+        phone: customer.phone,
+        tax_id: customer.taxId,
+        address: customer.address,
+        payment_terms: customer.paymentTerms,
+      });
+
+      if (error) throw error;
+      toast.success('Customer added successfully');
+    } catch (error: any) {
+      console.error('Error adding customer:', error);
+      toast.error('Failed to add customer: ' + error.message);
+    }
   };
 
-  const updateCustomer = (id: string, customer: Partial<Customer>) => {
-    setCustomers(customers.map(c => (c.id === id ? { ...c, ...customer } : c)));
-    toast.success('Customer updated successfully');
+  const updateCustomer = async (id: string, customer: Partial<Customer>) => {
+    try {
+      const updateData: any = {};
+      if (customer.name) updateData.name = customer.name;
+      if (customer.contactPerson) updateData.contact_person = customer.contactPerson;
+      if (customer.email) updateData.email = customer.email;
+      if (customer.phone) updateData.phone = customer.phone;
+      if (customer.taxId) updateData.tax_id = customer.taxId;
+      if (customer.address) updateData.address = customer.address;
+      if (customer.paymentTerms !== undefined) updateData.payment_terms = customer.paymentTerms;
+
+      const { error } = await supabase.from('customers').update(updateData).eq('id', id);
+
+      if (error) throw error;
+      toast.success('Customer updated successfully');
+    } catch (error: any) {
+      console.error('Error updating customer:', error);
+      toast.error('Failed to update customer: ' + error.message);
+    }
   };
 
-  const deleteCustomer = (id: string) => {
-    setCustomers(customers.filter(c => c.id !== id));
-    toast.success('Customer deleted successfully');
+  const deleteCustomer = async (id: string) => {
+    try {
+      const { error } = await supabase.from('customers').delete().eq('id', id);
+
+      if (error) throw error;
+      toast.success('Customer deleted successfully');
+    } catch (error: any) {
+      console.error('Error deleting customer:', error);
+      toast.error('Failed to delete customer: ' + error.message);
+    }
   };
 
-  const addSaleOrder = (so: Omit<SaleOrder, 'id' | 'soNumber' | 'createdAt'>) => {
-    const soNumber = `SO-${new Date().getFullYear()}-${String(saleOrders.length + 1).padStart(3, '0')}`;
-    const newSO: SaleOrder = {
-      ...so,
-      id: `SO${Date.now()}`,
-      soNumber,
-      createdAt: new Date(),
-    };
-    setSaleOrders([...saleOrders, newSO]);
-    toast.success(`Sale Order ${soNumber} created successfully`);
+  // CRUD operations for sale orders
+  const addSaleOrder = async (so: Omit<SaleOrder, 'id' | 'soNumber' | 'createdAt'>) => {
+    if (!user) return;
+
+    try {
+      // Generate SO number
+      const soNumber = `SO-${new Date().getFullYear()}-${String(saleOrders.length + 1).padStart(3, '0')}`;
+
+      const { error } = await supabase.from('sale_orders').insert([{
+        user_id: user.id,
+        so_number: soNumber,
+        customer_id: so.customerId,
+        customer_name: so.customerName,
+        so_date: so.soDate.toISOString(),
+        po_number: so.poNumber || null,
+        po_date: so.poDate?.toISOString() || null,
+        line_items: so.lineItems as any,
+        total: so.total,
+        status: so.status,
+        notes: so.notes || null,
+      }]);
+
+      if (error) throw error;
+      toast.success(`Sale Order ${soNumber} created successfully`);
+    } catch (error: any) {
+      console.error('Error adding sale order:', error);
+      toast.error('Failed to add sale order: ' + error.message);
+    }
   };
 
-  const updateSaleOrder = (id: string, so: Partial<SaleOrder>) => {
-    setSaleOrders(saleOrders.map(s => (s.id === id ? { ...s, ...so } : s)));
-    toast.success('Sale Order updated successfully');
+  const updateSaleOrder = async (id: string, so: Partial<SaleOrder>) => {
+    try {
+      const updateData: any = {};
+      if (so.customerId) updateData.customer_id = so.customerId;
+      if (so.customerName) updateData.customer_name = so.customerName;
+      if (so.soDate) updateData.so_date = so.soDate.toISOString();
+      if (so.poNumber !== undefined) updateData.po_number = so.poNumber;
+      if (so.poDate !== undefined) updateData.po_date = so.poDate?.toISOString();
+      if (so.lineItems) updateData.line_items = so.lineItems;
+      if (so.total !== undefined) updateData.total = so.total;
+      if (so.status) updateData.status = so.status;
+      if (so.notes !== undefined) updateData.notes = so.notes;
+
+      const { error } = await supabase.from('sale_orders').update(updateData).eq('id', id);
+
+      if (error) throw error;
+      toast.success('Sale Order updated successfully');
+    } catch (error: any) {
+      console.error('Error updating sale order:', error);
+      toast.error('Failed to update sale order: ' + error.message);
+    }
   };
 
-  const deleteSaleOrder = (id: string) => {
-    setSaleOrders(saleOrders.filter(s => s.id !== id));
-    toast.success('Sale Order deleted successfully');
+  const deleteSaleOrder = async (id: string) => {
+    try {
+      const { error } = await supabase.from('sale_orders').delete().eq('id', id);
+
+      if (error) throw error;
+      toast.success('Sale Order deleted successfully');
+    } catch (error: any) {
+      console.error('Error deleting sale order:', error);
+      toast.error('Failed to delete sale order: ' + error.message);
+    }
   };
 
-  const addInvoice = (invoice: Omit<Invoice, 'id' | 'invoiceNumber' | 'createdAt' | 'daysDelayed'>) => {
-    const invoiceNumber = `INV-${new Date().getFullYear()}-${String(invoices.length + 1).padStart(3, '0')}`;
-    const daysDelayed = calculateDaysDelayed(invoice.dueDate);
-    const newInvoice: Invoice = {
-      ...invoice,
-      id: `INV${Date.now()}`,
-      invoiceNumber,
-      daysDelayed,
-      createdAt: new Date(),
-    };
-    // Auto-determine status
-    newInvoice.status = determineInvoiceStatus(newInvoice);
-    setInvoices([...invoices, newInvoice]);
-    toast.success(`Invoice ${invoiceNumber} created successfully`);
+  // CRUD operations for invoices
+  const addInvoice = async (invoice: Omit<Invoice, 'id' | 'invoiceNumber' | 'createdAt' | 'daysDelayed'>) => {
+    if (!user) return;
+
+    try {
+      // Generate invoice number
+      const invoiceNumber = `INV-${new Date().getFullYear()}-${String(invoices.length + 1).padStart(3, '0')}`;
+
+      const { error } = await supabase.from('invoices').insert([{
+        user_id: user.id,
+        invoice_number: invoiceNumber,
+        invoice_date: invoice.invoiceDate.toISOString(),
+        vendor_id: invoice.vendorId,
+        vendor_name: invoice.vendorName,
+        po_number: invoice.poNumber || null,
+        po_date: invoice.poDate?.toISOString() || null,
+        line_items: invoice.lineItems as any,
+        gst_percent: invoice.gstPercent,
+        transportation_cost: invoice.transportationCost,
+        discount: invoice.discount,
+        total_cost: invoice.totalCost,
+        amount_received: invoice.amountReceived,
+        pending_amount: invoice.pendingAmount,
+        status: invoice.status,
+        due_date: invoice.dueDate.toISOString(),
+        po_id: invoice.poId || null,
+      }]);
+
+      if (error) throw error;
+      toast.success(`Invoice ${invoiceNumber} created successfully`);
+    } catch (error: any) {
+      console.error('Error adding invoice:', error);
+      toast.error('Failed to add invoice: ' + error.message);
+    }
   };
 
-  const updateInvoice = (id: string, invoice: Partial<Invoice>) => {
-    setInvoices(
-      invoices.map(inv => {
-        if (inv.id === id) {
-          const updated = { ...inv, ...invoice };
-          updated.daysDelayed = calculateDaysDelayed(updated.dueDate);
-          updated.status = determineInvoiceStatus(updated);
-          return updated;
-        }
-        return inv;
-      })
+  const updateInvoice = async (id: string, invoice: Partial<Invoice>) => {
+    try {
+      const updateData: any = {};
+      if (invoice.invoiceDate) updateData.invoice_date = invoice.invoiceDate.toISOString();
+      if (invoice.vendorId) updateData.vendor_id = invoice.vendorId;
+      if (invoice.vendorName) updateData.vendor_name = invoice.vendorName;
+      if (invoice.poNumber !== undefined) updateData.po_number = invoice.poNumber;
+      if (invoice.poDate !== undefined) updateData.po_date = invoice.poDate?.toISOString();
+      if (invoice.lineItems) updateData.line_items = invoice.lineItems;
+      if (invoice.gstPercent !== undefined) updateData.gst_percent = invoice.gstPercent;
+      if (invoice.transportationCost !== undefined) updateData.transportation_cost = invoice.transportationCost;
+      if (invoice.discount !== undefined) updateData.discount = invoice.discount;
+      if (invoice.totalCost !== undefined) updateData.total_cost = invoice.totalCost;
+      if (invoice.amountReceived !== undefined) updateData.amount_received = invoice.amountReceived;
+      if (invoice.pendingAmount !== undefined) updateData.pending_amount = invoice.pendingAmount;
+      if (invoice.status) updateData.status = invoice.status;
+      if (invoice.dueDate) updateData.due_date = invoice.dueDate.toISOString();
+      if (invoice.poId !== undefined) updateData.po_id = invoice.poId;
+
+      const { error } = await supabase.from('invoices').update(updateData).eq('id', id);
+
+      if (error) throw error;
+      toast.success('Invoice updated successfully');
+    } catch (error: any) {
+      console.error('Error updating invoice:', error);
+      toast.error('Failed to update invoice: ' + error.message);
+    }
+  };
+
+  const deleteInvoice = async (id: string) => {
+    try {
+      const { error } = await supabase.from('invoices').delete().eq('id', id);
+
+      if (error) throw error;
+      toast.success('Invoice deleted successfully');
+    } catch (error: any) {
+      console.error('Error deleting invoice:', error);
+      toast.error('Failed to delete invoice: ' + error.message);
+    }
+  };
+
+  // CRUD operations for expenses
+  const addExpense = async (expense: Omit<Expense, 'id' | 'createdAt'>) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase.from('expenses').insert({
+        user_id: user.id,
+        date: expense.date.toISOString(),
+        category: expense.category,
+        description: expense.description,
+        amount: expense.amount,
+        payment_mode: expense.paymentMode,
+        status: expense.status,
+        attachment: expense.attachment,
+      });
+
+      if (error) throw error;
+      toast.success('Expense added successfully');
+    } catch (error: any) {
+      console.error('Error adding expense:', error);
+      toast.error('Failed to add expense: ' + error.message);
+    }
+  };
+
+  const updateExpense = async (id: string, expense: Partial<Expense>) => {
+    try {
+      const updateData: any = {};
+      if (expense.date) updateData.date = expense.date.toISOString();
+      if (expense.category) updateData.category = expense.category;
+      if (expense.description) updateData.description = expense.description;
+      if (expense.amount !== undefined) updateData.amount = expense.amount;
+      if (expense.paymentMode) updateData.payment_mode = expense.paymentMode;
+      if (expense.status) updateData.status = expense.status;
+      if (expense.attachment !== undefined) updateData.attachment = expense.attachment;
+
+      const { error } = await supabase.from('expenses').update(updateData).eq('id', id);
+
+      if (error) throw error;
+      toast.success('Expense updated successfully');
+    } catch (error: any) {
+      console.error('Error updating expense:', error);
+      toast.error('Failed to update expense: ' + error.message);
+    }
+  };
+
+  const deleteExpense = async (id: string) => {
+    try {
+      const { error } = await supabase.from('expenses').delete().eq('id', id);
+
+      if (error) throw error;
+      toast.success('Expense deleted successfully');
+    } catch (error: any) {
+      console.error('Error deleting expense:', error);
+      toast.error('Failed to delete expense: ' + error.message);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Loading...</div>
+      </div>
     );
-    toast.success('Invoice updated successfully');
-  };
-
-  const deleteInvoice = (id: string) => {
-    setInvoices(invoices.filter(inv => inv.id !== id));
-    toast.success('Invoice deleted successfully');
-  };
-
-  const addExpense = (expense: Omit<Expense, 'id' | 'createdAt'>) => {
-    const newExpense: Expense = {
-      ...expense,
-      id: `EXP${Date.now()}`,
-      createdAt: new Date(),
-    };
-    setExpenses([...expenses, newExpense]);
-    toast.success('Expense added successfully');
-  };
-
-  const updateExpense = (id: string, expense: Partial<Expense>) => {
-    setExpenses(expenses.map(exp => (exp.id === id ? { ...exp, ...expense } : exp)));
-    toast.success('Expense updated successfully');
-  };
-
-  const deleteExpense = (id: string) => {
-    setExpenses(expenses.filter(exp => exp.id !== id));
-    toast.success('Expense deleted successfully');
-  };
+  }
 
   return (
     <AppContext.Provider
@@ -1078,6 +649,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         invoices,
         expenses,
         dashboardStats,
+        loading,
         addVendor,
         updateVendor,
         deleteVendor,
