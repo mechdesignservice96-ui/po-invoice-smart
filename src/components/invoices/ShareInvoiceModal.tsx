@@ -374,6 +374,16 @@ export const ShareInvoiceModal = ({ open, onClose, invoice }: ShareInvoiceModalP
         yPos += 6;
       }
 
+      if (invoice.discount && invoice.discount > 0) {
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...textGray);
+        doc.text('Discount:', totalsX, yPos);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...darkGray);
+        doc.text('- ₹' + invoice.discount.toFixed(2), totalsX + totalsWidth, yPos, { align: 'right' });
+        yPos += 6;
+      }
+
       const roundOff = Math.round(invoice.totalCost) - invoice.totalCost;
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...textGray);
