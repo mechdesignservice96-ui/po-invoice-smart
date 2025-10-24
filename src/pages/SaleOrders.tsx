@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Plus, Search, Filter, FileDown, FileUp, Edit, Trash2, ExternalLink, FileText, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Search, Filter, FileDown, FileUp, Edit, Trash2, ExternalLink, FileText, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,7 +46,7 @@ const getStatusBadge = (status: SOStatus) => {
 };
 
 const SaleOrders = () => {
-  const { saleOrders, deleteSaleOrder, addSaleOrder, customers, addInvoice, vendors } = useApp();
+  const { saleOrders, deleteSaleOrder, addSaleOrder, customers, addInvoice, vendors, addCustomer } = useApp();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,6 +57,7 @@ const SaleOrders = () => {
   const [createInvoiceDialogOpen, setCreateInvoiceDialogOpen] = useState(false);
   const [soForInvoice, setSOForInvoice] = useState<(typeof saleOrders)[0] | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [isLoadingSample, setIsLoadingSample] = useState(false);
 
   // Get customer info
   const getCustomerInfo = (customerId: string) => {
@@ -155,6 +156,181 @@ const SaleOrders = () => {
     
     // Navigate to invoices page
     navigate('/invoices');
+  };
+
+  const handleLoadSampleData = async () => {
+    setIsLoadingSample(true);
+    try {
+      // Add sample customers
+      const sampleCustomers = [
+        {
+          name: 'Tech Solutions Inc',
+          contactPerson: 'John Smith',
+          email: 'john@techsolutions.com',
+          phone: '+91-9876543210',
+          taxId: 'GSTIN123456789',
+          address: '123 MG Road, Bangalore, Karnataka 560001',
+          paymentTerms: 30,
+        },
+        {
+          name: 'Global Enterprises Ltd',
+          contactPerson: 'Sarah Johnson',
+          email: 'sarah@globalent.com',
+          phone: '+91-9876543211',
+          taxId: 'GSTIN987654321',
+          address: '456 Park Street, Mumbai, Maharashtra 400001',
+          paymentTerms: 45,
+        },
+        {
+          name: 'Innovative Systems Pvt Ltd',
+          contactPerson: 'Raj Kumar',
+          email: 'raj@innovativesys.com',
+          phone: '+91-9876543212',
+          taxId: 'GSTIN456789123',
+          address: '789 Commercial Road, Delhi 110001',
+          paymentTerms: 30,
+        },
+      ];
+
+      // Add customers first
+      for (const customer of sampleCustomers) {
+        await addCustomer(customer);
+      }
+
+      // Wait a bit for customers to be added
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Get the newly added customers
+      const newCustomers = customers.slice(-3);
+
+      // Add sample sale orders with line items
+      const sampleSOs = [
+        {
+          customerId: newCustomers[0]?.id || customers[0]?.id,
+          customerName: newCustomers[0]?.name || customers[0]?.name || 'Tech Solutions Inc',
+          soDate: new Date('2025-01-15'),
+          poNumber: 'PO-2025-001',
+          poDate: new Date('2025-01-10'),
+          lineItems: [
+            {
+              id: 'item-1',
+              particulars: 'Software Development Services - Custom CRM Module',
+              soQty: 1,
+              qtyDispatched: 0,
+              balanceQty: 1,
+              basicAmount: 150000,
+              gstPercent: 18,
+              gstAmount: 27000,
+              lineTotal: 177000,
+            },
+            {
+              id: 'item-2',
+              particulars: 'Database Setup and Configuration - PostgreSQL',
+              soQty: 1,
+              qtyDispatched: 0,
+              balanceQty: 1,
+              basicAmount: 50000,
+              gstPercent: 18,
+              gstAmount: 9000,
+              lineTotal: 59000,
+            },
+          ],
+          total: 236000,
+          status: 'Confirmed' as const,
+          notes: 'Project to be completed in 3 months',
+        },
+        {
+          customerId: newCustomers[1]?.id || customers[1]?.id,
+          customerName: newCustomers[1]?.name || customers[1]?.name || 'Global Enterprises Ltd',
+          soDate: new Date('2025-01-18'),
+          poNumber: 'PO-2025-002',
+          poDate: new Date('2025-01-15'),
+          lineItems: [
+            {
+              id: 'item-3',
+              particulars: 'Cloud Infrastructure Setup - AWS',
+              soQty: 1,
+              qtyDispatched: 1,
+              balanceQty: 0,
+              basicAmount: 200000,
+              gstPercent: 18,
+              gstAmount: 36000,
+              lineTotal: 236000,
+            },
+            {
+              id: 'item-4',
+              particulars: 'Security Audit Services',
+              soQty: 1,
+              qtyDispatched: 0,
+              balanceQty: 1,
+              basicAmount: 75000,
+              gstPercent: 18,
+              gstAmount: 13500,
+              lineTotal: 88500,
+            },
+            {
+              id: 'item-5',
+              particulars: 'DevOps Implementation - CI/CD Pipeline',
+              soQty: 1,
+              qtyDispatched: 0,
+              balanceQty: 1,
+              basicAmount: 100000,
+              gstPercent: 18,
+              gstAmount: 18000,
+              lineTotal: 118000,
+            },
+          ],
+          total: 442500,
+          status: 'Dispatched' as const,
+          notes: 'Priority project - Phase 1 completed',
+        },
+        {
+          customerId: newCustomers[2]?.id || customers[2]?.id,
+          customerName: newCustomers[2]?.name || customers[2]?.name || 'Innovative Systems Pvt Ltd',
+          soDate: new Date('2025-01-20'),
+          poNumber: 'PO-2025-003',
+          lineItems: [
+            {
+              id: 'item-6',
+              particulars: 'Mobile App Development - iOS & Android',
+              soQty: 1,
+              qtyDispatched: 0,
+              balanceQty: 1,
+              basicAmount: 300000,
+              gstPercent: 18,
+              gstAmount: 54000,
+              lineTotal: 354000,
+            },
+            {
+              id: 'item-7',
+              particulars: 'UI/UX Design Services',
+              soQty: 1,
+              qtyDispatched: 0,
+              balanceQty: 1,
+              basicAmount: 80000,
+              gstPercent: 18,
+              gstAmount: 14400,
+              lineTotal: 94400,
+            },
+          ],
+          total: 448400,
+          status: 'Draft' as const,
+          notes: 'Waiting for client approval on design mockups',
+        },
+      ];
+
+      // Add sale orders
+      for (const so of sampleSOs) {
+        await addSaleOrder(so);
+      }
+
+      toast.success('Sample data loaded successfully! Added 3 customers and 3 sale orders.');
+    } catch (error) {
+      console.error('Error loading sample data:', error);
+      toast.error('Failed to load sample data');
+    } finally {
+      setIsLoadingSample(false);
+    }
   };
 
   const handleAddNew = () => {
@@ -415,6 +591,27 @@ const SaleOrders = () => {
                 <span className="hidden md:inline">Import from Excel</span>
                 <span className="md:hidden">Import</span>
               </Button>
+              {saleOrders.length === 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleLoadSampleData}
+                  disabled={isLoadingSample}
+                >
+                  {isLoadingSample ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="hidden md:inline">Loading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-4 h-4" />
+                      <span className="hidden md:inline">Load Sample Data</span>
+                      <span className="md:hidden">Sample</span>
+                    </>
+                  )}
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={handleExportToExcel}>
                 <FileDown className="w-4 h-4" />
                 <span className="hidden md:inline">Export to Excel</span>
