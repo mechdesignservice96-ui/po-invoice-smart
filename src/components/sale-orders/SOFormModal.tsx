@@ -127,11 +127,15 @@ export const SOFormModal = ({ open, onOpenChange, so }: SOFormModalProps) => {
       gstAmount: 0,
       lineTotal: 0,
     };
-    setLineItems([...lineItems, newItem]);
+    const updated = [...lineItems, newItem];
+    setLineItems(updated);
+    form.setValue('lineItems', updated);
   };
 
   const removeLineItem = (index: number) => {
-    setLineItems(lineItems.filter((_, i) => i !== index));
+    const updated = lineItems.filter((_, i) => i !== index);
+    setLineItems(updated);
+    form.setValue('lineItems', updated);
   };
 
   const updateLineItem = (index: number, field: keyof SOLineItem, value: any) => {
@@ -149,6 +153,7 @@ export const SOFormModal = ({ open, onOpenChange, so }: SOFormModalProps) => {
     }
 
     setLineItems(updated);
+    form.setValue('lineItems', updated);
   };
 
   const calculateTotal = () => {
