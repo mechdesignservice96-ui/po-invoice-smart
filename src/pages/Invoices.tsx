@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Filter, Download, FileUp, Edit, Trash2, AlertCircle, ChevronDown, ChevronRight, X, Share2 } from 'lucide-react';
+import { Plus, Search, Filter, Download, FileUp, Edit, Trash2, AlertCircle, ChevronDown, ChevronRight, X, Share2, FileText, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -62,7 +62,7 @@ const getStatusBadge = (status: InvoiceStatus) => {
 };
 
 const Invoices = () => {
-  const { invoices, deleteInvoice, addInvoice, vendors } = useApp();
+  const { invoices, deleteInvoice, addInvoice, vendors, addVendor } = useApp();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -78,6 +78,7 @@ const Invoices = () => {
   const [filterColumn, setFilterColumn] = useState<string>('');
   const [filterValue, setFilterValue] = useState<string>('');
   const [filterOpen, setFilterOpen] = useState(false);
+  const [isLoadingSample, setIsLoadingSample] = useState(false);
 
   // Read vendor filter from URL params
   useEffect(() => {
@@ -449,6 +450,135 @@ const Invoices = () => {
     }
   };
 
+  const handleLoadSampleData = async () => {
+    setIsLoadingSample(true);
+    try {
+      // Add sample vendors first
+      const sampleVendors = [
+        {
+          name: 'Tech Hardware Suppliers Ltd',
+          contactPerson: 'Amit Kumar',
+          email: 'amit@techhardware.com',
+          phone: '+91-9876543210',
+          gstTin: 'GSTIN123456789',
+          paymentTerms: 30,
+        },
+        {
+          name: 'Office Essentials Pvt Ltd',
+          contactPerson: 'Priya Sharma',
+          email: 'priya@officeessentials.com',
+          phone: '+91-9876543211',
+          gstTin: 'GSTIN987654321',
+          paymentTerms: 45,
+        },
+      ];
+
+      for (const vendor of sampleVendors) {
+        await addVendor(vendor);
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const newVendors = vendors.slice(-2);
+
+      // Add sample invoices
+      const sampleInvoices = [
+        {
+          vendorId: newVendors[0]?.id || vendors[0]?.id,
+          vendorName: newVendors[0]?.name || vendors[0]?.name || 'Tech Hardware Suppliers Ltd',
+          invoiceDate: new Date('2025-01-15'),
+          poNumber: 'PO-2025-001',
+          poDate: new Date('2025-01-10'),
+          lineItems: [
+            {
+              id: 'inv-item-1',
+              particulars: 'Dell Laptops - 15.6" FHD, Intel i7, 16GB RAM, 512GB SSD',
+              qtyDispatched: 10,
+              basicAmount: 500000,
+              gstAmount: 90000,
+              lineTotal: 590000,
+            },
+            {
+              id: 'inv-item-2',
+              particulars: 'Wireless Mouse and Keyboard Combo',
+              qtyDispatched: 20,
+              basicAmount: 30000,
+              gstAmount: 5400,
+              lineTotal: 35400,
+            },
+          ],
+          gstPercent: 18,
+          transportationCost: 5000,
+          discount: 10000,
+          totalCost: 620400,
+          amountReceived: 310000,
+          pendingAmount: 310400,
+          status: 'Partial' as const,
+          dueDate: new Date('2025-02-15'),
+        },
+        {
+          vendorId: newVendors[1]?.id || vendors[1]?.id || vendors[0]?.id,
+          vendorName: newVendors[1]?.name || vendors[1]?.name || vendors[0]?.name || 'Office Essentials Pvt Ltd',
+          invoiceDate: new Date('2025-01-20'),
+          poNumber: 'PO-2025-002',
+          poDate: new Date('2025-01-18'),
+          lineItems: [
+            {
+              id: 'inv-item-3',
+              particulars: 'Office Chairs - Ergonomic Design with Lumbar Support',
+              qtyDispatched: 25,
+              basicAmount: 250000,
+              gstAmount: 45000,
+              lineTotal: 295000,
+            },
+            {
+              id: 'inv-item-4',
+              particulars: 'Standing Desks - Height Adjustable',
+              qtyDispatched: 15,
+              basicAmount: 450000,
+              gstAmount: 81000,
+              lineTotal: 531000,
+            },
+            {
+              id: 'inv-item-5',
+              particulars: 'LED Monitor Arms - Dual Mount',
+              qtyDispatched: 30,
+              basicAmount: 90000,
+              gstAmount: 16200,
+              lineTotal: 106200,
+            },
+          ],
+          gstPercent: 18,
+          transportationCost: 15000,
+          discount: 20000,
+          totalCost: 927200,
+          amountReceived: 927200,
+          pendingAmount: 0,
+          status: 'Paid' as const,
+          dueDate: new Date('2025-02-20'),
+        },
+      ];
+
+      for (const invoice of sampleInvoices) {
+        await addInvoice(invoice);
+      }
+
+      toast({ 
+        title: 'Success', 
+        description: 'Sample data loaded successfully! Added 2 vendors and 2 invoices.' 
+      });
+    } catch (error) {
+      console.error('Error loading sample data:', error);
+      toast({ 
+        title: 'Error', 
+        description: 'Failed to load sample data', 
+        variant: 'destructive' 
+      });
+    } finally {
+      setIsLoadingSample(false);
+    }
+  };
+
   // Calculate summary stats
   const totalInvoices = invoices.length;
   const paidInvoices = invoices.filter(inv => inv.status === 'Paid').length;
@@ -552,6 +682,34 @@ const Invoices = () => {
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Import invoices from Excel file</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleLoadSampleData}
+                      disabled={isLoadingSample}
+                    >
+                      {isLoadingSample ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span className="hidden md:inline">Loading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-4 h-4" />
+                          <span className="hidden md:inline">Load Sample Data</span>
+                          <span className="md:hidden">Sample</span>
+                        </>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Load sample invoices for testing</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
