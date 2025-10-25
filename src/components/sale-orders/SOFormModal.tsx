@@ -474,14 +474,32 @@ export const SOFormModal = ({ open, onOpenChange, so }: SOFormModalProps) => {
               )}
             />
 
-            <div className="flex gap-3 justify-end pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                ❌ Cancel
+            <div className="flex flex-col sm:flex-row gap-3 justify-end pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+                className="w-full sm:w-auto"
+              >
+                <span className="sm:hidden">Cancel</span>
+                <span className="hidden sm:inline">❌ Cancel</span>
               </Button>
-              <Button type="button" variant="outline" onClick={() => { form.reset(); setLineItems([]); }}>
-                🔄 Reset
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => { form.reset(); setLineItems([]); }}
+                className="w-full sm:w-auto"
+              >
+                <span className="sm:hidden">Reset</span>
+                <span className="hidden sm:inline">🔄 Reset</span>
               </Button>
-              <Button type="submit">💾 Save SO</Button>
+              <Button 
+                type="submit"
+                className="w-full sm:w-auto"
+              >
+                <span className="sm:hidden">Save</span>
+                <span className="hidden sm:inline">💾 Save SO</span>
+              </Button>
             </div>
           </form>
         </Form>
