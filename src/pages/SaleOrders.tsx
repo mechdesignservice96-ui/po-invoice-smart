@@ -591,27 +591,25 @@ const SaleOrders = () => {
                 <span className="hidden md:inline">Import from Excel</span>
                 <span className="md:hidden">Import</span>
               </Button>
-              {saleOrders.length === 0 && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleLoadSampleData}
-                  disabled={isLoadingSample}
-                >
-                  {isLoadingSample ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="hidden md:inline">Loading...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="w-4 h-4" />
-                      <span className="hidden md:inline">Load Sample Data</span>
-                      <span className="md:hidden">Sample</span>
-                    </>
-                  )}
-                </Button>
-              )}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleLoadSampleData}
+                disabled={isLoadingSample}
+              >
+                {isLoadingSample ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="hidden md:inline">Loading...</span>
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-4 h-4" />
+                    <span className="hidden md:inline">Load Sample Data</span>
+                    <span className="md:hidden">Sample</span>
+                  </>
+                )}
+              </Button>
               <Button variant="outline" size="sm" onClick={handleExportToExcel}>
                 <FileDown className="w-4 h-4" />
                 <span className="hidden md:inline">Export to Excel</span>
