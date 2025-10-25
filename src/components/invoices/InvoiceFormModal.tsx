@@ -374,7 +374,8 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
               <CardTitle className="text-lg">Line Items / Particulars</CardTitle>
               <Button type="button" onClick={addLineItem} size="sm" className="gap-2">
                 <Plus className="w-4 h-4" />
-                Add Item
+                <span className="hidden sm:inline">Add Item</span>
+                <span className="sm:hidden">Add</span>
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -498,15 +499,31 @@ export function InvoiceFormModal({ open, onClose, invoice }: InvoiceFormModalPro
           </Card>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={handleReset}>
-              🔄 Reset
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleReset}
+              className="w-full sm:w-auto"
+            >
+              <span className="sm:hidden">Reset</span>
+              <span className="hidden sm:inline">🔄 Reset</span>
             </Button>
-            <Button type="button" variant="ghost" onClick={onClose}>
-              ❌ Cancel
+            <Button 
+              type="button" 
+              variant="ghost" 
+              onClick={onClose}
+              className="w-full sm:w-auto"
+            >
+              <span className="sm:hidden">Cancel</span>
+              <span className="hidden sm:inline">❌ Cancel</span>
             </Button>
-            <Button type="submit">
-              💾 Save Invoice
+            <Button 
+              type="submit"
+              className="w-full sm:w-auto"
+            >
+              <span className="sm:hidden">Save</span>
+              <span className="hidden sm:inline">💾 Save Invoice</span>
             </Button>
           </div>
         </form>
